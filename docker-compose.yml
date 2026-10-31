@@ -15,7 +15,7 @@ services:
       N8N_PERSONALIZATION_ENABLED: "false"
       # Chave e modelo lidos pelo workflow via $env: o JSON exportado não leva credencial.
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-latest}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
       N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
       # Code nodes leem prompts/, regras/ e templates/ do disco (montados read-only).
       NODE_FUNCTION_ALLOW_BUILTIN: fs,path

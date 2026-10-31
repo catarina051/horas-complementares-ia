@@ -125,7 +125,7 @@ no('Gemini', 'n8n-nodes-base.httpRequest', 4.2, [3520, 280], {
   sendHeaders: true,
   headerParameters: { parameters: [{ name: 'x-goog-api-key', value: '={{ $env.GEMINI_API_KEY }}' }] },
   sendBody: true, specifyBody: 'json', jsonBody: '={{ JSON.stringify($json.requisicao) }}',
-  options: { ...respostaJson, timeout: 90000 },
+  options: { ...respostaJson, timeout: 45000 },
 }, continuar);
 code('Validar e calcular', 'validar-calcular', [3740, 160]);
 se('Classificação ok?', [3960, 160], semErro);

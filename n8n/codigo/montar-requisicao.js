@@ -14,7 +14,7 @@ const certificado = j.texto_anonimizado.replace(/<\/?\s*certificado\s*>/gi, '');
 return [{
   json: {
     ...j,
-    modelo: $env.GEMINI_MODEL || 'gemini-flash-latest',
+    modelo: $env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
     simular: !$env.GEMINI_API_KEY,
     requisicao: {
       systemInstruction: { parts: [{ text: prompt }] },

@@ -21,10 +21,10 @@ test('troca o nome com e sem acento e em qualquer caixa', async () => {
   }
 });
 
-test('troca partes soltas do nome, mas não partículas', async () => {
-  const { texto_anonimizado } = await anonimizar('Aluna Exemplo, F. de Tal, participou da palestra de segurança da informação por 2 horas.');
-  assert.ok(!texto_anonimizado.includes('Exemplo'));
-  assert.match(texto_anonimizado, / da palestra/);
+test('troca "Primeiro Último", mas não um sobrenome solto que é nome de instituição', async () => {
+  const { texto_anonimizado } = await anonimizar('Certificamos que Fulana Exemplo participou da palestra no Instituto Exemplo por 2 horas, com debate.');
+  assert.match(texto_anonimizado, /que \[ALUNO\] participou/);
+  assert.match(texto_anonimizado, /Instituto Exemplo/);
 });
 
 test('troca matrícula, RG e CPF, com ou sem pontuação', async () => {

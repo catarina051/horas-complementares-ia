@@ -80,6 +80,11 @@ categoria, das horas e do alerta de injeção, além de tokens e custo por vers�
     data passou a ser carimbada por cima, numa posição fixa do modelo.
   - O Form Trigger novo do n8n não aceita resposta customizada: fiquei na versão 2.1 do nó para
     devolver a página com os dois downloads.
+  - O anonimizador trocava sobrenomes soltos e transformou "Instituto Exemplo" em
+    "Instituto [ALUNO]" na descrição. Agora troca só o nome completo e "Primeiro Último".
+  - `gemini-flash-latest` passou de 110 s sem responder num pico de demanda, e `gemini-2.5-flash`
+    não está disponível para contas novas. Fixei `gemini-3.5-flash-lite` (2 s por certificado);
+    apelidos `-latest` também mudam de modelo sem aviso e invalidam a comparação entre prompts.
 - **Decisão difícil:** guardar os dados e a assinatura no servidor deixaria o uso ainda mais simples,
   mas exigiria login, criptografia e LGPD. Pior: sem login, qualquer pessoa que soubesse a matrícula
   de outra geraria uma declaração assinada por ela. Escolhi o kit pessoal: o aluno guarda e o servidor

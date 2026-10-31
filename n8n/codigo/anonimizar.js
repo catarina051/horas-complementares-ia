@@ -30,12 +30,13 @@ function anonimizar(texto, dados) {
   };
 
   const palavras = String(dados.nome ?? '').trim().split(/\s+/).filter(Boolean);
+  const nomeTodo = (lista) => trocar(`(?<![\\p{L}])${lista.map(padraoPalavra).join('\\s+')}(?![\\p{L}])`);
   if (palavras.length) {
-    trocar(`(?<![\\p{L}])${palavras.map(padraoPalavra).join('\\s+')}(?![\\p{L}])`);
-    // Partes soltas do nome (ex.: só o sobrenome), menos partículas e palavras curtas.
-    for (const p of palavras) {
-      if (p.length >= 4 && !PARTICULAS.has(semAcento(p))) trocar(`(?<![\\p{L}])${padraoPalavra(p)}(?![\\p{L}])`);
-    }
+    nomeTodo(palavras);
+    // Também "Primeiro Último" (ex.: "Maria Silva"). Partes soltas ficam: um sobrenome sozinho
+    // costuma ser nome de instituição ("Escola Silva") e trocá-lo estragaria a descrição.
+    const semParticulas = palavras.filter((p) => !PARTICULAS.has(semAcento(p)));
+    if (semParticulas.length > 2) nomeTodo([semParticulas[0], semParticulas.at(-1)]);
   }
   for (const valor of [dados.matricula, dados.rg, dados.cpf]) {
     const padrao = padraoDigitos(valor);

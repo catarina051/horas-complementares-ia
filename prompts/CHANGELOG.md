@@ -17,4 +17,8 @@ Primeira versão, escrita a partir da skill `cefetmg-horas-complementares` e da 
   pedido dentro dele vira `alerta_instrucao_suspeita: true`.
 - Saída estruturada com `responseSchema` (JSON), com enum das categorias e das variantes.
 
+Modelo: `gemini-3.5-flash-lite`, temperatura 0. Nas 4 amostras fictícias de `samples/` acertou
+categoria, horas e alerta de injeção (4/4), com cerca de 2.200 tokens de entrada por certificado.
+Isso só valida o fluxo, não é a métrica do caso.
+
 Acerto: a medir com os 20 certificados homologados.

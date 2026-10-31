@@ -71,6 +71,10 @@ function calcular(regras, c) {
 const falha = (erro) => [{ json: { origem: base.origem, modo: base.modo, erro } }];
 
 if (r.statusCode === 429) return falha('O limite gratuito do modelo de IA acabou por agora. Tente de novo em alguns minutos.');
+if (r.statusCode === 503) return falha('O modelo de IA está sobrecarregado agora. Tente de novo em alguns minutos.');
+if (r.statusCode === undefined && /timeout|aborted/i.test(r.error?.message ?? '')) {
+  return falha('O modelo de IA demorou demais para responder. Tente de novo.');
+}
 if (r.statusCode !== 200) return falha(`O modelo de IA não respondeu (erro ${r.statusCode ?? 'de rede'}). Tente de novo.`);
 
 let c;
