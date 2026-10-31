@@ -1,7 +1,7 @@
-// Valida a resposta do modelo e calcula as horas pela tabela regras/categorias-2022-1.json.
+// Valida a resposta do modelo e calcula as horas pela tabela regras/categorias-cl2023t.json.
 // O modelo só escolhe categoria, variante e quantidades; toda conta é feita aqui.
 const fs = require('fs');
-const regras = JSON.parse(fs.readFileSync('/data/regras/categorias-2022-1.json', 'utf8'));
+const regras = JSON.parse(fs.readFileSync('/data/regras/categorias-cl2023t.json', 'utf8'));
 const base = $('Montar requisição').first().json;
 const r = $input.first().json;
 

@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { RAIZ, executar } from './n8n.mjs';
 
-const regras = JSON.parse(readFileSync(join(RAIZ, 'regras', 'categorias-2022-1.json'), 'utf8'));
+const regras = JSON.parse(readFileSync(join(RAIZ, 'regras', 'categorias-cl2023t.json'), 'utf8'));
 const schema = JSON.parse(readFileSync(join(RAIZ, 'prompts', 'classificacao', 'schema.json'), 'utf8'));
 
 test('toda categoria do schema tem regra, e vice-versa', () => {
@@ -40,13 +40,19 @@ async function calcular(tipo_sigaa, variante, quantidades) {
 test('curso na área: horas × 1,2', async () => {
   const c = await calcular('Curso extracurricular na área de concentração do curso', 'padrao', { horas: 20 });
   assert.equal(c.ha_abatidas, 24);
-  assert.equal(c.teto_ha, 180);
+  assert.equal(c.teto_ha, 228);
+});
+
+test('caso real homologado: curso de 400 h na área virou 228 h/a no SIGAA (teto de 40% de 570)', async () => {
+  const c = await calcular('Curso extracurricular na área de concentração do curso', 'padrao', { horas: 400 });
+  assert.equal(c.ha_calculadas, 480);
+  assert.equal(c.ha_abatidas, 228);
 });
 
 test('teto da categoria limita o certificado', async () => {
   const c = await calcular('Curso extracurricular em área diferenciada da área de concentração do curso', 'padrao', { horas: 200 });
   assert.equal(c.ha_calculadas, 120);
-  assert.equal(c.ha_abatidas, 90);
+  assert.equal(c.ha_abatidas, 114);
   assert.equal(c.limitado_pelo_teto, true);
 });
 
@@ -64,8 +70,8 @@ test('valores fixos e por semestre', async () => {
 });
 
 test('PET tem teto maior com certificado final', async () => {
-  assert.equal((await calcular('Programa de Educação Tutorial', 'certificado_final', { semestres: 4 })).ha_abatidas, 360);
-  assert.equal((await calcular('Programa de Educação Tutorial', 'padrao', { semestres: 4 })).ha_abatidas, 225);
+  assert.equal((await calcular('Programa de Educação Tutorial', 'certificado_final', { semestres: 4 })).ha_abatidas, 456);
+  assert.equal((await calcular('Programa de Educação Tutorial', 'padrao', { semestres: 4 })).ha_abatidas, 285);
 });
 
 test('prática profissional: 60 h valem 15 h/a', async () => {

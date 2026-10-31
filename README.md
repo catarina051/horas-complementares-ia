@@ -10,7 +10,7 @@ do certificado.
 
 ## Problema (Fato) e causa
 
-- **Fato:** cada aluno precisa somar 450 h/a de Atividades Complementares. Para cada certificado,
+- **Fato:** cada aluno precisa somar 570 h/a de Atividades Complementares. Para cada certificado,
   escolhe um entre 25 tipos parecidos no SIGAA ("Palestra" ou "Participação em congresso"? "Curso
   na área" ou "em área diferenciada"?), monta à mão o PDF com a declaração datada e não sabe quantas
   horas vão contar até a Coordenação responder. Tempo manual por certificado: _a medir_.
@@ -43,7 +43,7 @@ API /webhook/classificar ─► mesma classificação, resposta em JSON (usada p
   que carimbam a data na declaração e extraem o texto do certificado. Reaproveita o script de troca
   de data da skill `cefetmg-horas-complementares`.
 - **Gemini Flash (plano gratuito)** só escolhe a categoria, a variante e lê as quantidades. **As horas
-  são calculadas em código** a partir de [`regras/categorias-2022-1.json`](regras), em que cada
+  são calculadas em código** a partir de [`regras/categorias-cl2023t.json`](regras), em que cada
   linha cita a norma e o artigo.
 - **Kit pessoal sem guardar nada:** no primeiro uso o aluno digita os dados e envia a foto da
   assinatura (o fundo some com filtro CSS e `mix-blend-mode`, sem IA). Recebe também a
@@ -76,6 +76,9 @@ categoria, das horas e do alerta de injeção, além de tokens e custo por vers�
 - **Onde errei e o que mudei:**
   - Comecei pela CGRAD 17/11, como a skill e a página do curso. Lendo as normas, achei a CGRAD 05/23,
     que revogou a 17/11 sem regra de transição e é a que o SIGAA usa hoje. A tabela foi refeita.
+  - Usei 450 h/a (PPC de 2019) como total. O primeiro certificado real desmentiu: 400 h de curso
+    na área viraram 228 h/a no SIGAA, exatamente o teto de 40% de **570**. A matriz que vale é a
+    CL2023T, e trocar um número na tabela recalculou todos os tetos.
   - O script de data da skill só lê PDFs "estilo Word". Para a declaração gerada pelo Chromium, a
     data passou a ser carimbada por cima, numa posição fixa do modelo.
   - O Form Trigger novo do n8n não aceita resposta customizada: fiquei na versão 2.1 do nó para

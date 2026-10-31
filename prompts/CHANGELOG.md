@@ -8,7 +8,7 @@ depois, medido com `evals/run_eval.py` no mesmo conjunto de certificados.
 Primeira versão, escrita a partir da skill `cefetmg-horas-complementares` e da Resolução CGRAD 05/23.
 
 - Papel e limite claros: o modelo escolhe categoria, variante e quantidades, e **não** calcula horas
-  (a conta fica em código, com `regras/categorias-2022-1.json`).
+  (a conta fica em código, com `regras/categorias-cl2023t.json`).
 - As 25 categorias com o rótulo exato do SIGAA e a quantidade que cada uma usa.
 - 9 regras de decisão herdadas da skill (curso no estágio continua curso; participar ≠ apresentar ≠
   organizar; evento inteiro ≠ palestra; "Outras Atividades" só como último recurso).

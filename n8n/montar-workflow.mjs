@@ -64,7 +64,7 @@ const PRIVACIDADE = 'Entendo que meus dados servem só para gerar a declaração
 no('Formulário', 'n8n-nodes-base.formTrigger', 2.1, [0, 0], {
   path: 'horas-complementares',
   formTitle: 'Horas Complementares: certificado pronto para o SIGAA',
-  formDescription: 'Para Eng. de Computação do CEFET-MG Leopoldina, ingresso 2022.1 (450 h/a). Envie o certificado e receba a categoria do SIGAA, as horas que serão abatidas e o PDF pronto (declaração assinada + certificado). A validação final é da Coordenação.',
+  formDescription: 'Para Eng. de Computação do CEFET-MG Leopoldina, matriz CL2023T (570 h/a). Envie o certificado e receba a categoria do SIGAA, as horas que serão abatidas e o PDF pronto (declaração assinada + certificado). A validação final é da Coordenação.',
   formFields: {
     values: [
       { fieldLabel: 'Certificado (PDF)', fieldType: 'file', acceptFileTypes: '.pdf', multipleFiles: false, requiredField: true },

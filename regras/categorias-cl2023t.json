@@ -1,10 +1,10 @@
 {
-  "descricao": "Valoração das Atividades Complementares para Eng. de Computação, CEFET-MG Leopoldina, matriz de ingresso 2022.1. Total do PPC + tabela da Resolução CGRAD 05/23 (em vigor desde 14/11/2023, revogou a CGRAD 17/11 sem regra de transição). Veja regras/README.md.",
-  "total_ac_ha": 450,
+  "descricao": "Valoração das Atividades Complementares para Eng. de Computação, CEFET-MG Leopoldina, matriz CL2023T (570 h/a). Total exigido + tabela da Resolução CGRAD 05/23 (em vigor desde 14/11/2023, revogou a CGRAD 17/11 sem regra de transição). Veja regras/README.md.",
+  "total_ac_ha": 570,
   "fonte_total": {
-    "norma": "PPC de Engenharia de Computação, campus Leopoldina, versão 2 (2019)",
-    "artigo": "Seção de carga horária: 450 horas-aula (375 horas) de atividades complementares; 1 h/a = 50 min",
-    "url": "http://www.eng-computacao.leopoldina.cefetmg.br/wp-content/uploads/sites/178/2019/03/PPC_CECOMLP_v21.pdf"
+    "norma": "Matriz CL2023T no SIGAA (os tipos aparecem como \"(CL2023T) ...\")",
+    "artigo": "Confirmado por lançamento real: curso de 400 h na área foi aceito com 228 h/a = teto de 40% de 570. O PPC v2 (2019) da matriz anterior previa 450 h/a.",
+    "url": null
   },
   "arredondamento": "A soma das horas validadas é convertida em horas-aula e arredondada para o próximo inteiro (CGRAD 05/23, art. 9º).",
   "fontes": {
