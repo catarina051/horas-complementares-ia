@@ -1,0 +1,80 @@
+<!doctype html>
+<!--
+  Declaração de Autenticidade: modelo que a Coordenação de Eng. de Controle e Automação
+  Leopoldina disponibiliza (Anexo 1 da Resolução CGRAD 04/22, cabeçalho do Conselho de
+  Graduação), com as posições medidas no PDF oficial do curso.
+  O n8n troca os {{campos}} já escapados para HTML e o Gotenberg converte para PDF.
+
+  A declaração-base sai SEM data: o serviço `declaracao` carimba "Leopoldina, <hoje>"
+  sobre a linha de Local e Data. Se mudar a posição do .linha-data, mude KIT_DATA_TOPO_MM
+  em services/declaracao/app.py junto (e a versão da marca do kit).
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Declaração de Autenticidade</title>
+<style>
+  @page { size: A4; margin: 0; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 210mm; height: 297mm; position: relative;
+    font-family: Arial, "Liberation Sans", Helvetica, sans-serif;
+    font-size: 12pt; color: #000; background: #fff;
+  }
+  .abs { position: absolute; left: 31.8mm; right: 24.7mm; text-align: center; }
+  .brasao { position: absolute; top: 12.7mm; left: 95.7mm; width: 19.2mm; height: 22.3mm; }
+  .cabecalho { top: 36.8mm; left: 0; right: 0; font-weight: bold; line-height: 4.85mm; }
+  .resolucao { top: 65.9mm; font-size: 14pt; font-weight: bold; }
+  .titulo { top: 87.9mm; font-weight: bold; }
+  .corpo {
+    position: absolute; top: 110mm; left: 31.8mm; right: 24.7mm;
+    text-align: justify; line-height: 7.3mm;
+  }
+  .corpo .dado { white-space: nowrap; }
+  /* Linha de Local e Data: a data é carimbada logo acima dela (linha de base a 193,8 mm). */
+  .linha-data { position: absolute; top: 195.3mm; left: 64.3mm; width: 82mm; border-top: 0.3mm solid #000; }
+  .rotulo-data { top: 198mm; }
+  /* Remoção do fundo sem IA: ver o modelo de Eng. de Computação. */
+  .assinatura {
+    position: absolute; top: 211mm; left: 64.3mm; width: 82mm; height: 18mm;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .assinatura img {
+    max-width: 100%; max-height: 100%;
+    filter: grayscale(1) brightness(1.35) contrast(3.2);
+    mix-blend-mode: multiply;
+  }
+  .linha-assinatura { position: absolute; top: 230mm; left: 64.3mm; width: 82mm; border-top: 0.3mm solid #000; }
+  .rotulo-assinatura { top: 232.9mm; }
+  .pagina { position: absolute; top: 277.8mm; left: 167.6mm; font-size: 8pt; }
+</style>
+</head>
+<body>
+  <img class="brasao" src="{{arquivo:brasao-republica.png}}" alt="Brasão da República">
+  <div class="abs cabecalho">
+    MINISTÉRIO DA EDUCAÇÃO<br>
+    CENTRO FEDERAL DE EDUCAÇÃO TECNOLÓGICA DE MINAS GERAIS<br>
+    CONSELHO DE GRADUAÇÃO
+  </div>
+
+  <div class="abs resolucao">RESOLUÇÃO CGRAD – 04/22, ANEXO 1</div>
+  <div class="abs titulo">DECLARAÇÃO DE AUTENTICIDADE</div>
+
+  <div class="corpo">
+    Eu, <span class="dado">{{nome}}</span>, matriculado(a) no curso Engenharia de Controle e Automação do
+    CEFET-MG, campus Leopoldina, número de matrícula <span class="dado">{{matricula}}</span>, portador(a)
+    da carteira de identidade <span class="dado">{{rg}}</span>, inscrito(a) no CPF sob o número
+    <span class="dado">{{cpf}}</span>, <strong>DECLARO</strong> que os documentos cadastrados são autênticos.
+    Afirmo estar ciente de que a falsidade documental, verificada a qualquer tempo, implicará em
+    nulidade do lançamento das atividades no Sistema Acadêmico, além das sanções penais e cíveis cabíveis.
+  </div>
+
+  <div class="linha-data"></div>
+  <div class="abs rotulo-data">Local e Data</div>
+
+  <div class="assinatura"><img src="{{assinatura}}" alt=""></div>
+  <div class="linha-assinatura"></div>
+  <div class="abs rotulo-assinatura">Assinatura do(a) aluno(a)</div>
+  <div class="pagina">Página <strong>1</strong> de <strong>1</strong></div>
+</body>
+</html>

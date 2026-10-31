@@ -8,8 +8,17 @@ if (!fs.existsSync(arquivo)) throw new Error(`Prompt ${j.versao} não existe em 
 
 const prompt = fs.readFileSync(arquivo, 'utf8');
 const schema = JSON.parse(fs.readFileSync('/data/prompts/classificacao/schema.json', 'utf8'));
+const curso = JSON.parse(fs.readFileSync('/data/regras/cursos.json', 'utf8'))[j.curso];
+// "Na área" depende do curso, e cada colegiado tem categorias próprias: o modelo precisa saber qual é.
+const base = JSON.parse(fs.readFileSync('/data/regras/base-cgrad-05-23.json', 'utf8')).categorias.map((c) => c.tipo_sigaa);
+const extras = curso.categorias.map((c) => c.tipo_sigaa).filter((t) => !base.includes(t));
 // O certificado não pode fechar a tag e "sair" da área de dados.
-const certificado = j.texto_anonimizado.replace(/<\/?\s*certificado\s*>/gi, '');
+const certificado = j.texto_anonimizado.replace(/<\/?\s*(certificado|curso)\s*>/gi, '');
+const mensagem = [
+  `<curso>${curso.nome}. Área de concentração: ${curso.area_concentracao}.`,
+  `Categorias próprias deste curso: ${extras.length ? extras.join('; ') : 'nenhuma'}.</curso>`,
+  `<certificado>\n${certificado}\n</certificado>`,
+].join('\n');
 
 return [{
   json: {
@@ -18,7 +27,7 @@ return [{
     simular: !$env.GEMINI_API_KEY,
     requisicao: {
       systemInstruction: { parts: [{ text: prompt }] },
-      contents: [{ role: 'user', parts: [{ text: `<certificado>\n${certificado}\n</certificado>` }] }],
+      contents: [{ role: 'user', parts: [{ text: mensagem }] }],
       generationConfig: { temperature: 0, responseMimeType: 'application/json', responseSchema: schema },
     },
   },

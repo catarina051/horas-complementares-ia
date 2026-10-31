@@ -3,6 +3,20 @@
 Formato de cada versão: o erro que apareceu na avaliação → a correção no prompt → o acerto antes e
 depois, medido com `evals/run_eval.py` no mesmo conjunto de certificados.
 
+## classificacao/v2
+
+Motivo: a ferramenta passou a atender também Engenharia de Controle e Automação.
+
+- Erro que a v1 cometeria: "curso na área" era sempre computação, então um curso de CLP para um aluno
+  de Controle e Automação cairia em "área diferenciada" e valeria metade das horas.
+- Correção: cada pedido traz um bloco `<curso>` com a área de concentração e as categorias próprias
+  do curso; o prompt manda medir "na área" por ele. Um exemplo novo (CLP para Controle e Automação).
+- Categorias próprias dos colegiados: 5 de Eng. de Computação (CCECOMLP 06/22) e 1 de Controle e
+  Automação (núcleos estudantis, CCECA 004/2018). Novo campo `quantidade` para organizações
+  visitadas e trabalhos avaliados.
+
+Acerto: a medir.
+
 ## classificacao/v1
 
 Primeira versão, escrita a partir da skill `cefetmg-horas-complementares` e da Resolução CGRAD 05/23.

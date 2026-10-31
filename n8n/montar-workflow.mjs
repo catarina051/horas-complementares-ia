@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 const codigo = (nome) => readFileSync(join(AQUI, 'codigo', `${nome}.js`), 'utf8');
+const cursos = JSON.parse(readFileSync(join(AQUI, '..', 'regras', 'cursos.json'), 'utf8'));
 
 const nodes = [];
 const connections = {};
@@ -64,9 +65,17 @@ const PRIVACIDADE = 'Entendo que meus dados servem só para gerar a declaração
 no('Formulário', 'n8n-nodes-base.formTrigger', 2.1, [0, 0], {
   path: 'horas-complementares',
   formTitle: 'Horas Complementares: certificado pronto para o SIGAA',
-  formDescription: 'Para Eng. de Computação do CEFET-MG Leopoldina, matriz CL2023T (570 h/a). Envie o certificado e receba a categoria do SIGAA, as horas que serão abatidas e o PDF pronto (declaração assinada + certificado). A validação final é da Coordenação.',
+  formDescription: 'Para Eng. de Computação e Eng. de Controle e Automação do CEFET-MG Leopoldina. Envie o certificado e receba a categoria do SIGAA, as horas que serão abatidas e o PDF pronto (declaração assinada + certificado). A validação final é da Coordenação.',
   formFields: {
     values: [
+      {
+        fieldLabel: 'Curso', fieldType: 'radio', requiredField: true,
+        fieldOptions: { values: Object.values(cursos).map((c) => ({ option: c.rotulo_formulario })) },
+      },
+      {
+        fieldLabel: 'Ingresso (só Controle e Automação)', fieldType: 'radio',
+        fieldOptions: { values: Object.values(cursos['eng-controle-automacao'].matrizes).map((m) => ({ option: m.rotulo })) },
+      },
       { fieldLabel: 'Certificado (PDF)', fieldType: 'file', acceptFileTypes: '.pdf', multipleFiles: false, requiredField: true },
       {
         fieldLabel: 'Declaração de autenticidade', fieldType: 'radio', requiredField: true,
@@ -105,7 +114,7 @@ gotenberg('Gotenberg: HTML para PDF', [1320, -120], '/forms/chromium/convert/htm
   { parameterType: 'formBinaryData', name: 'files', inputDataFieldName: 'html' },
   { name: 'preferCssPageSize', value: 'true' },
   { name: 'printBackground', value: 'true' },
-  { name: 'metadata', value: '{"Subject":"horas-complementares-ia/declaracao-base/v1"}' },
+  { name: 'metadata', value: '={{ JSON.stringify({ Subject: $json.marca_kit }) }}' },
 ], 'declaracao_base');
 code('Guardar base', 'guardar-base', [1540, -120]);
 postPdf('Datar declaração', [1760, 0], 'http://declaracao:8000/redatar', 'declaracao_base');

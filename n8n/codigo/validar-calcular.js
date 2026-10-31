@@ -1,27 +1,37 @@
-// Valida a resposta do modelo e calcula as horas pela tabela regras/categorias-cl2023t.json.
+// Valida a resposta do modelo e calcula as horas pelas regras de regras/:
+// base-cgrad-05-23.json (comum a todos) + cursos.json (total da matriz e categorias do colegiado).
 // O modelo só escolhe categoria, variante e quantidades; toda conta é feita aqui.
 const fs = require('fs');
-const regras = JSON.parse(fs.readFileSync('/data/regras/categorias-cl2023t.json', 'utf8'));
+const regrasBase = JSON.parse(fs.readFileSync('/data/regras/base-cgrad-05-23.json', 'utf8'));
+const cursos = JSON.parse(fs.readFileSync('/data/regras/cursos.json', 'utf8'));
 const base = $('Montar requisição').first().json;
 const r = $input.first().json;
 
 const num = (v) => Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 const arred = (v) => Math.round(v * 100) / 100;
-const UNIDADE = { por_hora: 'horas', por_dia: 'dias', por_mes: 'meses', por_semestre: 'semestres', por_ano: 'anos' };
+const UNIDADE = {
+  por_hora: 'horas', por_dia: 'dias', por_mes: 'meses', por_semestre: 'semestres', por_ano: 'anos', por_quantidade: 'quantidade',
+};
+const ROTULO_UNIDADE = { horas: 'a carga horária', quantidade: 'a quantidade (organizações, trabalhos)' };
 
-function calcular(regras, c) {
-  const cat = regras.categorias.find((x) => x.tipo_sigaa === c.tipo_sigaa);
-  if (!cat) return { status: 'a_confirmar', motivo: 'Categoria sem regra cadastrada.' };
+function calcular(regrasBase, curso, matrizId, c) {
+  const matriz = curso.matrizes[matrizId];
+  // A regra do colegiado do curso vale no lugar da geral quando as duas tratam da mesma categoria.
+  const cat = curso.categorias.find((x) => x.tipo_sigaa === c.tipo_sigaa)
+    ?? regrasBase.categorias.find((x) => x.tipo_sigaa === c.tipo_sigaa);
+  const contexto = { curso: curso.nome, matriz: matriz.rotulo, total_ac_ha: matriz.total_ac_ha };
+  if (!cat) return { ...contexto, status: 'a_confirmar', motivo: `Esta categoria não existe para ${curso.nome}.` };
 
+  const fonte = curso.fontes[cat.norma] ?? regrasBase.fontes[cat.norma];
   const tetoPct = cat.teto_pct[c.variante] ?? cat.teto_pct.padrao;
   const resultado = {
+    ...contexto,
     status: 'confirmado',
     teto_pct: tetoPct,
-    teto_ha: arred((regras.total_ac_ha * tetoPct) / 100),
-    total_ac_ha: regras.total_ac_ha,
-    norma: cat.norma === 'cgrad05_23' ? 'Resolução CGRAD 05/23' : 'Resolução CGRAD 19/11',
+    teto_ha: arred((matriz.total_ac_ha * tetoPct) / 100),
+    norma: fonte.nome,
     artigo: cat.artigo,
-    url_fonte: regras.fontes[cat.norma],
+    url_fonte: fonte.url,
     observacao: cat.observacao ?? null,
     ha_calculadas: null,
     ha_abatidas: null,
@@ -39,7 +49,7 @@ function calcular(regras, c) {
   const unidade = UNIDADE[cat.calculo];
   const qtd = unidade ? Number(c.quantidades?.[unidade]) : 1;
   if (unidade && !(qtd > 0)) {
-    return { ...resultado, status: 'a_confirmar', motivo: `O certificado não informa ${unidade === 'horas' ? 'a carga horária' : `o número de ${unidade}`}.` };
+    return { ...resultado, status: 'a_confirmar', motivo: `O certificado não informa ${ROTULO_UNIDADE[unidade] ?? `o número de ${unidade}`}.` };
   }
 
   let ha;
@@ -95,10 +105,12 @@ return [{
     modo: base.modo,
     versao: base.versao,
     modelo: base.modelo,
+    curso: base.curso,
+    matriz: base.matriz,
     simulado: Boolean(r.simulado),
     linha_data: base.linha_data,
     classificacao: c,
-    calculo: calcular(regras, c),
+    calculo: calcular(regrasBase, cursos[base.curso], base.matriz, c),
     ha_certificado: horas > 0 ? arred(horas * 1.2) : null,
     tokens: { entrada: uso.promptTokenCount ?? 0, saida: uso.candidatesTokenCount ?? 0 },
     erro: '',

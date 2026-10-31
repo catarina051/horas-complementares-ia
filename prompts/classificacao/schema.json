@@ -32,7 +32,13 @@
         "Liga Universitária",
         "Projetos de Ensino",
         "Participação em empresa júnior",
-        "Outras Atividades"
+        "Outras Atividades",
+        "Organização de Visita Técnica",
+        "Monitor de Evento",
+        "Avaliador de Trabalho em Evento Técnico-Científico Local",
+        "Associação Atlética Acadêmica",
+        "Evento esportivo representando o CEFET-MG",
+        "Participação em Núcleo Estudantil"
       ],
       "description": "Tipo exato a marcar no SIGAA"
     },
@@ -85,6 +91,11 @@
           "type": "integer",
           "nullable": true,
           "description": "Número de anos de gestão"
+        },
+        "quantidade": {
+          "type": "integer",
+          "nullable": true,
+          "description": "Número de itens: organizações visitadas, trabalhos avaliados"
         }
       },
       "required": [
@@ -92,14 +103,16 @@
         "dias",
         "meses",
         "semestres",
-        "anos"
+        "anos",
+        "quantidade"
       ],
       "propertyOrdering": [
         "horas",
         "dias",
         "meses",
         "semestres",
-        "anos"
+        "anos",
+        "quantidade"
       ]
     },
     "atividade": {
@@ -168,7 +181,13 @@
           "Liga Universitária",
           "Projetos de Ensino",
           "Participação em empresa júnior",
-          "Outras Atividades"
+          "Outras Atividades",
+          "Organização de Visita Técnica",
+          "Monitor de Evento",
+          "Avaliador de Trabalho em Evento Técnico-Científico Local",
+          "Associação Atlética Acadêmica",
+          "Evento esportivo representando o CEFET-MG",
+          "Participação em Núcleo Estudantil"
         ]
       },
       "description": "Outras categorias plausíveis, só se a confiança não for alta"

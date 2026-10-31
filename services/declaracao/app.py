@@ -36,9 +36,15 @@ from reportlab.pdfgen import canvas
 from atualizar_data_declaracao import interpretar_data, substituir_data
 
 # Marca gravada pelo Gotenberg nos metadados da declaração-base (campo Subject).
-KIT_MARCA = 'horas-complementares-ia/declaracao-base/v1'
-# Linha de base da data, em mm a partir do topo. Igual ao .data de templates/declaracao.html.
-KIT_DATA_TOPO_MM = 175
+KIT_MARCA = 'horas-complementares-ia/declaracao-base/v2'
+# Linha de base da data, em mm a partir do topo, por versão do template (templates/declaracao.html).
+# Eng. de Computação: v1 = primeiro layout; v2 = modelo oficial do curso (CGRAD 04/22, Anexo 1).
+# Eng. de Controle e Automação: eca/v1 = modelo do curso (Anexo 1 com cabeçalho do Conselho de Graduação).
+KIT_DATA_TOPO_MM = {
+    'horas-complementares-ia/declaracao-base/v1': 175,
+    KIT_MARCA: 188.5,
+    'horas-complementares-ia/declaracao-eca/v1': 193.8,
+}
 KIT_CIDADE = 'Leopoldina'
 TAMANHO_MAXIMO = 10 * 1024 * 1024
 # Abaixo disso, uma página com imagem é tratada como imagem (só cabeçalho/rodapé selecionáveis).
@@ -69,12 +75,13 @@ def extrair_dados(texto: str) -> dict:
     }
 
 
-def _e_kit(reader: PdfReader) -> bool:
-    meta = reader.metadata or {}
-    return KIT_MARCA in str(meta.get('/Subject', ''))
+def _topo_do_kit(reader: PdfReader) -> float | None:
+    """Posição da data se o PDF for uma declaração-base desta ferramenta; senão None."""
+    assunto = str((reader.metadata or {}).get('/Subject', ''))
+    return next((topo for marca, topo in KIT_DATA_TOPO_MM.items() if marca == assunto.strip()), None)
 
 
-def carimbar_data(reader: PdfReader, texto_data: str) -> tuple[PdfWriter, str]:
+def carimbar_data(reader: PdfReader, texto_data: str, topo_mm: float) -> tuple[PdfWriter, str]:
     # Só a página vai para o writer: a marca de kit não passa para o PDF datado,
     # para ele não ser carimbado de novo se for reenviado por engano.
     writer = PdfWriter()
@@ -86,7 +93,7 @@ def carimbar_data(reader: PdfReader, texto_data: str) -> tuple[PdfWriter, str]:
     buf = BytesIO()
     c = canvas.Canvas(buf, pagesize=(largura, altura))
     c.setFont('Helvetica', 12)
-    c.drawCentredString(largura / 2, altura - KIT_DATA_TOPO_MM * mm, linha)
+    c.drawCentredString(largura / 2, altura - topo_mm * mm, linha)
     c.save()
     pagina.merge_page(PdfReader(buf).pages[0])
     return writer, linha
@@ -119,8 +126,9 @@ def processar(pdf: bytes, data: str | None = None) -> dict:
 
     dados = extrair_dados(_texto(reader))
     texto_data = interpretar_data(data)
-    if _e_kit(reader):
-        writer, linha = carimbar_data(reader, texto_data)
+    topo = _topo_do_kit(reader)
+    if topo is not None:
+        writer, linha = carimbar_data(reader, texto_data, topo)
         metodo = 'carimbo_kit'
     else:
         writer, linha = reescrever_linha(reader, texto_data)

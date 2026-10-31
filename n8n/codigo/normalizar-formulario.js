@@ -2,6 +2,8 @@
 // O Form Trigger 2.1 identifica cada campo pelo rótulo, e o arquivo pelo rótulo com \W → _.
 // Estes rótulos precisam ser iguais aos de n8n/montar-workflow.mjs (um teste confere).
 const ROTULOS = {
+  curso: 'Curso',
+  ingresso: 'Ingresso (só Controle e Automação)',
   certificado: 'Certificado (PDF)',
   modo: 'Declaração de autenticidade',
   nome: 'Nome completo',
@@ -11,6 +13,8 @@ const ROTULOS = {
   assinatura: 'Foto da assinatura (JPG ou PNG)',
   declaracao_base: 'Declaração-base (PDF)',
 };
+const fs = require('fs');
+const cursos = JSON.parse(fs.readFileSync('/data/regras/cursos.json', 'utf8'));
 const item = $input.first();
 const texto = (chave) => (typeof item.json[ROTULOS[chave]] === 'string' ? item.json[ROTULOS[chave]].trim() : '');
 const recebidos = item.binary ?? {};
@@ -19,10 +23,16 @@ const arquivos = Object.fromEntries(['certificado', 'assinatura', 'declaracao_ba
   .filter(([, arquivo]) => arquivo));
 
 const modo = texto('modo').startsWith('Primeira') ? 'primeiro_uso' : 'reuso';
+// As opções de Curso e Ingresso no formulário são os rótulos de regras/cursos.json.
+const [cursoId, curso] = Object.entries(cursos).find(([, c]) => c.rotulo_formulario === texto('curso')) ?? [];
+const matrizId = curso?.matriz_padrao
+  ?? Object.entries(curso?.matrizes ?? {}).find(([, m]) => m.rotulo === texto('ingresso'))?.[0];
 const saida = {
   origem: 'formulario',
   modo,
-  versao: 'v1',
+  versao: 'v2',
+  curso: cursoId ?? null,
+  matriz: matrizId ?? null,
   nome: texto('nome').replace(/\s+/g, ' '),
   matricula: texto('matricula'),
   rg: texto('rg'),
@@ -31,6 +41,8 @@ const saida = {
 };
 
 const faltando = [];
+if (!curso) faltando.push('o curso');
+else if (!matrizId) faltando.push(`o ingresso (obrigatório para ${curso.nome})`);
 if (!arquivos.certificado) faltando.push('o certificado');
 if (modo === 'primeiro_uso') {
   if (!saida.nome) faltando.push('o nome completo');

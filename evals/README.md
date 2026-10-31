@@ -10,8 +10,10 @@ para Y% na v2".
 2. Copie `gabarito.example.csv` para `gabarito.csv` (também ignorado) e preencha uma linha por
    certificado:
    - `arquivo`: caminho relativo a esta pasta, ex. `certificados/curso-python.pdf`
-   - `tipo_esperado`: o tipo homologado no SIGAA, exatamente como em `regras/categorias-cl2023t.json`
+   - `tipo_esperado`: o tipo homologado no SIGAA, exatamente como em `regras/base-cgrad-05-23.json` ou `regras/cursos.json`
    - `nome`, `matricula`: usados só para anonimizar o texto antes do modelo
+   - `curso`, `matriz`: `eng-computacao` + `CL2023T`, ou `eng-controle-automacao` + `ate-2022-2` /
+     `desde-2023-1` (veja `regras/cursos.json`)
    - `ha_homologadas` (opcional): h/a que a Coordenação validou
    - `alerta_esperado` (opcional): `sim` se o certificado tem instrução escondida
 

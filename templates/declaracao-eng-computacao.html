@@ -1,11 +1,12 @@
 <!doctype html>
 <!--
-  Declaração de Autenticidade — Anexo I da Resolução CGRAD 04/22 (CEFET-MG).
+  Declaração de Autenticidade: modelo da Coordenação de Eng. de Computação Leopoldina
+  (Resolução CGRAD 04/22, Anexo 1), com as posições medidas no PDF oficial do curso.
   O n8n troca os {{campos}} já escapados para HTML e o Gotenberg converte para PDF.
 
   A declaração-base sai SEM data: o serviço `declaracao` carimba "Leopoldina, <hoje>"
-  centralizado a DATA_TOPO_MM do topo. Se mudar a posição do .data abaixo, mude
-  KIT_DATA_TOPO_MM em services/declaracao/app.py junto.
+  sobre a linha de Local e Data. Se mudar a posição do .linha-data, mude KIT_DATA_TOPO_MM
+  em services/declaracao/app.py junto (e a versão da marca do kit).
 -->
 <html lang="pt-BR">
 <head>
@@ -19,39 +20,47 @@
     font-family: Arial, "Liberation Sans", Helvetica, sans-serif;
     font-size: 12pt; color: #000; background: #fff;
   }
-  .cabecalho { position: absolute; top: 25mm; left: 0; right: 0; text-align: center; font-weight: bold; line-height: 1.5; }
-  .titulo { position: absolute; top: 62mm; left: 0; right: 0; text-align: center; font-weight: bold; }
-  .corpo .dado { white-space: nowrap; }
-  .corpo { position: absolute; top: 80mm; left: 25mm; right: 25mm; text-align: justify; line-height: 1.6; }
-  /* Espaço reservado para a data carimbada pelo serviço (linha de base a 175 mm do topo). */
-  .data { position: absolute; top: 169mm; left: 0; right: 0; height: 8mm; }
-  .rotulo-data { position: absolute; top: 180mm; left: 0; right: 0; text-align: center; }
-  .assinatura {
-    position: absolute; top: 200mm; left: 55mm; width: 100mm; height: 28mm;
-    display: flex; align-items: flex-end; justify-content: center;
+  .abs { position: absolute; left: 0; right: 0; text-align: center; }
+  .logo { position: absolute; top: 7.1mm; left: 18.2mm; width: 28.6mm; height: 18.5mm; }
+  .cabecalho { top: 12.9mm; left: 42mm; font-size: 10pt; font-weight: bold; line-height: 4.05mm; }
+  .resolucao { top: 49mm; font-weight: bold; }
+  .titulo { top: 63.6mm; font-weight: bold; }
+  .corpo {
+    position: absolute; top: 86mm; left: 20mm; right: 20mm;
+    text-align: justify; line-height: 9.73mm;
   }
+  .corpo .dado { white-space: nowrap; }
+  /* Linha de Local e Data: a data é carimbada logo acima dela (linha de base a 188,5 mm). */
+  .linha-data { position: absolute; top: 190mm; left: 64mm; width: 82mm; border-top: 0.3mm solid #000; }
+  .rotulo-data { top: 195.5mm; }
   /*
     Remoção do fundo sem IA: o filtro deixa o papel branco puro e o traço escuro,
     e o multiply faz o branco sumir sobre a página. Funciona com foto de celular
     com sombra leve; sombra forte pode deixar mancha.
   */
+  .assinatura {
+    position: absolute; top: 201mm; left: 64mm; width: 84mm; height: 18mm;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
   .assinatura img {
     max-width: 100%; max-height: 100%;
     filter: grayscale(1) brightness(1.35) contrast(3.2);
     mix-blend-mode: multiply;
   }
-  .linha { position: absolute; top: 229mm; left: 55mm; width: 100mm; border-top: 1px solid #000; }
-  .rotulo-assinatura { position: absolute; top: 231mm; left: 0; right: 0; text-align: center; }
+  .linha-assinatura { position: absolute; top: 219.5mm; left: 63.9mm; width: 84mm; border-top: 0.3mm solid #000; }
+  .rotulo-assinatura { top: 224.2mm; }
 </style>
 </head>
 <body>
-  <div class="cabecalho">
+  <img class="logo" src="{{arquivo:logo-cefetmg.jpg}}" alt="CEFET-MG">
+  <div class="abs cabecalho">
     CENTRO FEDERAL DE EDUCAÇÃO TECNOLÓGICA DE MINAS GERAIS<br>
     UNIDADE DE LEOPOLDINA<br>
     COORDENAÇÃO DE ENGENHARIA DE COMPUTAÇÃO
   </div>
 
-  <div class="titulo">DECLARAÇÃO DE AUTENTICIDADE</div>
+  <div class="abs resolucao">RESOLUÇÃO CGRAD – 04/22 - ANEXO 1</div>
+  <div class="abs titulo">DECLARAÇÃO DE AUTENTICIDADE</div>
 
   <div class="corpo">
     Eu, <span class="dado">{{nome}}</span>, matriculado(a) no curso Engenharia de Computação do CEFET-MG,
@@ -62,11 +71,11 @@
     das atividades no Sistema Acadêmico, além das sanções penais e cíveis cabíveis.
   </div>
 
-  <div class="data"></div>
-  <div class="rotulo-data">Local e Data</div>
+  <div class="linha-data"></div>
+  <div class="abs rotulo-data">Local e Data</div>
 
   <div class="assinatura"><img src="{{assinatura}}" alt=""></div>
-  <div class="linha"></div>
-  <div class="rotulo-assinatura">Assinatura do(a) aluno(a)</div>
+  <div class="linha-assinatura"></div>
+  <div class="abs rotulo-assinatura">Assinatura do(a) aluno(a)</div>
 </body>
 </html>

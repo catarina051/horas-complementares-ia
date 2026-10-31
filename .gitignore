@@ -7,6 +7,8 @@
 *.jpg
 *.jpeg
 !samples/**
+!templates/*.jpg
+!templates/*.png
 evals/certificados/
 evals/gabarito.csv
 evals/resultados/*.json

@@ -8,6 +8,8 @@ const saida = {
   origem: n.origem,
   modo: n.modo,
   versao: n.versao,
+  curso: n.curso,
+  matriz: n.matriz,
   dados_anonimizar: { nome: n.nome, matricula: n.matricula, rg: n.rg, cpf: n.cpf },
   declaracao_datada_b64: null,
   linha_data: null,

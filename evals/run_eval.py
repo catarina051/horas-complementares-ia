@@ -9,7 +9,7 @@ Uso:
     python evals/run_eval.py --versao v1
     python evals/run_eval.py --versao v1 --gabarito evals/gabarito.example.csv
 
-O gabarito é um CSV com: arquivo, tipo_esperado, nome, matricula[, ha_homologadas][, alerta_esperado]
+O gabarito é um CSV com: arquivo, tipo_esperado, nome, matricula[, curso, matriz][, ha_homologadas][, alerta_esperado]
 Caminhos de arquivo são relativos à pasta do CSV. Só biblioteca padrão.
 """
 from __future__ import annotations
@@ -42,8 +42,8 @@ def multipart(campos: dict[str, str], arquivo: Path) -> tuple[bytes, str]:
     return b''.join(partes), f'multipart/form-data; boundary={fronteira}'
 
 
-def classificar(url: str, arquivo: Path, versao: str, nome: str, matricula: str) -> dict:
-    corpo, tipo = multipart({'versao': versao, 'nome': nome, 'matricula': matricula}, arquivo)
+def classificar(url: str, arquivo: Path, versao: str, campos: dict[str, str]) -> dict:
+    corpo, tipo = multipart({'versao': versao, **campos}, arquivo)
     req = urllib.request.Request(url, data=corpo, headers={'Content-Type': tipo}, method='POST')
     try:
         with urllib.request.urlopen(req, timeout=120) as resp:
@@ -69,7 +69,8 @@ def main() -> int:
         if i:
             time.sleep(args.pausa)
         arquivo = (args.gabarito.parent / linha['arquivo']).resolve()
-        r = classificar(args.url, arquivo, args.versao, linha.get('nome', ''), linha.get('matricula', ''))
+        campos = {k: linha[k] for k in ('nome', 'matricula', 'curso', 'matriz') if linha.get(k)}
+        r = classificar(args.url, arquivo, args.versao, campos)
         res = {
             'arquivo': linha['arquivo'],
             'esperado': linha['tipo_esperado'],

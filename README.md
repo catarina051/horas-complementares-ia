@@ -3,14 +3,16 @@
 **Resultado:** _a medir no piloto_: colegas usando, minutos por certificado antes × depois e acerto
 da categoria em 20 certificados homologados.
 
-O aluno de Engenharia de Computação do CEFET-MG Leopoldina envia o certificado e recebe, em uma
+O aluno de Engenharia de Computação ou de Engenharia de Controle e Automação do CEFET-MG Leopoldina
+envia o certificado e recebe, em uma
 página: **qual tipo marcar no SIGAA**, **quantas horas-aula serão abatidas** (com a conta e a norma)
 e **o PDF pronto para anexar**, com a Declaração de Autenticidade preenchida, assinada e datada antes
 do certificado.
 
 ## Problema (Fato) e causa
 
-- **Fato:** cada aluno precisa somar 570 h/a de Atividades Complementares. Para cada certificado,
+- **Fato:** cada aluno precisa somar as horas de Atividades Complementares da sua matriz (570 h/a em
+  Eng. de Computação; 240 ou 45 h/a em Controle e Automação, conforme o ingresso). Para cada certificado,
   escolhe um entre 25 tipos parecidos no SIGAA ("Palestra" ou "Participação em congresso"? "Curso
   na área" ou "em área diferenciada"?), monta à mão o PDF com a declaração datada e não sabe quantas
   horas vão contar até a Coordenação responder. Tempo manual por certificado: _a medir_.
@@ -44,8 +46,10 @@ API /webhook/classificar ─► mesma classificação, resposta em JSON (usada p
   ele vem como imagem. Reaproveita o script de troca
   de data da skill `cefetmg-horas-complementares`.
 - **Gemini Flash (plano gratuito)** só escolhe a categoria, a variante e lê as quantidades. **As horas
-  são calculadas em código** a partir de [`regras/categorias-cl2023t.json`](regras), em que cada
-  linha cita a norma e o artigo.
+  são calculadas em código** a partir de [`regras/`](regras): a tabela geral da CGRAD 05/23 mais, por
+  curso, o total da matriz e as categorias do colegiado. Cada linha cita a norma e o artigo.
+- **Um modelo de declaração por curso,** cada um fiel ao PDF oficial da coordenação (Eng. de Computação
+  com o logo do CEFET-MG; Controle e Automação com o brasão e o cabeçalho do Conselho de Graduação).
 - **Kit pessoal sem guardar nada:** no primeiro uso o aluno digita os dados e envia a foto da
   assinatura (o fundo some com filtro CSS e `mix-blend-mode`, sem IA). Recebe também a
   declaração-base, que reutiliza depois: só a data muda.
@@ -101,11 +105,11 @@ categoria, das horas e do alerta de injeção, além de tokens e custo por vers�
 
 ```bash
 cp .env.example .env        # preencha GEMINI_API_KEY e N8N_ENCRYPTION_KEY
-docker compose up -d --build
-docker compose exec n8n n8n import:workflow --input=/data/workflows/horas-complementares.json
-docker compose exec n8n n8n publish:workflow --id=hcIaHorasCompl01
-docker compose restart n8n
+sh scripts/implantar.sh     # gera o workflow, sobe os containers e importa com o n8n parado
 ```
+
+Importar com o n8n ligado faz a primeira execução depois do reinício rodar a versão anterior; o script
+para o n8n, importa, publica e só então sobe de novo.
 
 Formulário: <http://localhost:5679/form/horas-complementares>. Sem `GEMINI_API_KEY` o fluxo roda em
 modo demonstração (classificação por palavras-chave, avisada na página).
@@ -138,4 +142,5 @@ _2 min, a gravar depois do piloto._
 ---
 
 A validação final de cada atividade é da Coordenação do curso. Regras: Resolução CGRAD 05/23,
-CGRAD 19/11 e PPC de Eng. de Computação Leopoldina (detalhes em [`regras/README.md`](regras/README.md)).
+CGRAD 19/11 e resoluções dos colegiados (CCECOMLP 06/22, CCECA 004/2018); detalhes em
+[`regras/README.md`](regras/README.md).

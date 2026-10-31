@@ -1,0 +1,165 @@
+{
+  "eng-computacao": {
+    "nome": "Engenharia de Computação",
+    "rotulo_formulario": "Engenharia de Computação",
+    "modelo_declaracao": "declaracao-eng-computacao.html",
+    "marca_kit": "horas-complementares-ia/declaracao-base/v2",
+    "area_concentracao": "computação: programação, desenvolvimento de software, banco de dados, ciência de dados e IA, redes, cibersegurança, cloud, sistemas digitais, arquitetura de computadores e eletrônica",
+    "matriz_padrao": "CL2023T",
+    "matrizes": {
+      "CL2023T": {
+        "rotulo": "Matriz CL2023T",
+        "total_ac_ha": 570,
+        "fonte": "Lançamento real homologado: curso de 400 h na área aceito com 228 h/a = teto de 40% de 570 (o PPC v2 de 2019 previa 450 h/a para a matriz anterior)."
+      }
+    },
+    "fontes": {
+      "ccecomlp06_22": {
+        "nome": "Resolução CCECOMLP 06/22 (Colegiado de Eng. de Computação Leopoldina)",
+        "url": "https://www.eng-computacao.leopoldina.cefetmg.br/wp-content/uploads/sites/178/2022/11/13-RESOLUCAO_CCECOMLP-06-22_DE_26_DE_OUTUBRO_DE_2022-Regulamenta-atividades-complementares.pdf"
+      }
+    },
+    "categorias": [
+      {
+        "tipo_sigaa": "Atividade de Extensão",
+        "grupo": "AC",
+        "calculo": "por_semestre",
+        "base_ha": 120,
+        "k": {
+          "padrao": 1
+        },
+        "teto_pct": {
+          "padrao": 50
+        },
+        "norma": "ccecomlp06_22",
+        "artigo": "Art. 1º",
+        "status": "confirmado",
+        "observacao": "Regra do colegiado: 100 h (120 h/a) por semestre de extensão, até 50% do total."
+      },
+      {
+        "tipo_sigaa": "Organização de Visita Técnica",
+        "grupo": "OAC",
+        "calculo": "por_quantidade",
+        "base_ha": 18,
+        "k": {
+          "padrao": 1
+        },
+        "teto_pct": {
+          "padrao": 30
+        },
+        "norma": "ccecomlp06_22",
+        "artigo": "Art. 2º",
+        "status": "confirmado",
+        "observacao": "15 h (18 h/a) por organização visitada."
+      },
+      {
+        "tipo_sigaa": "Monitor de Evento",
+        "grupo": "OAC",
+        "calculo": "por_hora",
+        "k": {
+          "padrao": 1
+        },
+        "teto_pct": {
+          "padrao": 30
+        },
+        "norma": "ccecomlp06_22",
+        "artigo": "Art. 3º",
+        "status": "confirmado"
+      },
+      {
+        "tipo_sigaa": "Avaliador de Trabalho em Evento Técnico-Científico Local",
+        "grupo": "OAC",
+        "calculo": "por_quantidade",
+        "base_ha": 2.4,
+        "k": {
+          "padrao": 1
+        },
+        "teto_pct": {
+          "padrao": 30
+        },
+        "norma": "ccecomlp06_22",
+        "artigo": "Art. 4º",
+        "status": "confirmado",
+        "observacao": "2 h (2,4 h/a) por trabalho avaliado."
+      },
+      {
+        "tipo_sigaa": "Associação Atlética Acadêmica",
+        "grupo": "OAC",
+        "calculo": "por_semestre",
+        "base_ha": 36,
+        "k": {
+          "presidente": 1,
+          "titular": 0.5,
+          "suplente": 0.25
+        },
+        "teto_pct": {
+          "padrao": 30
+        },
+        "norma": "ccecomlp06_22",
+        "artigo": "Art. 5º",
+        "status": "confirmado",
+        "observacao": "Associação Atlética Acadêmica das Escolas de Engenharia do CEFET-MG Leopoldina."
+      },
+      {
+        "tipo_sigaa": "Evento esportivo representando o CEFET-MG",
+        "grupo": "OAC",
+        "calculo": "por_hora",
+        "k": {
+          "padrao": 0.5
+        },
+        "teto_pct": {
+          "padrao": 20
+        },
+        "norma": "ccecomlp06_22",
+        "artigo": "Art. 6º",
+        "status": "confirmado"
+      }
+    ]
+  },
+  "eng-controle-automacao": {
+    "nome": "Engenharia de Controle e Automação",
+    "rotulo_formulario": "Engenharia de Controle e Automação",
+    "modelo_declaracao": "declaracao-eng-controle-automacao.html",
+    "marca_kit": "horas-complementares-ia/declaracao-eca/v1",
+    "area_concentracao": "controle e automação: automação industrial, sistemas de controle, instrumentação, eletrônica, eletrotécnica e máquinas elétricas, robótica, CLP e programação industrial, sistemas embarcados, redes industriais e programação",
+    "matriz_padrao": null,
+    "matrizes": {
+      "ate-2022-2": {
+        "rotulo": "Ingresso até 2022.2",
+        "total_ac_ha": 240,
+        "fonte": "https://www.eng-controleautomacao.leopoldina.cefetmg.br/atividades-complementares/"
+      },
+      "desde-2023-1": {
+        "rotulo": "Ingresso a partir de 2023.1",
+        "total_ac_ha": 45,
+        "fonte": "https://www.eng-controleautomacao.leopoldina.cefetmg.br/atividades-complementares/"
+      }
+    },
+    "fontes": {
+      "cceca04_2018": {
+        "nome": "Resolução CCECA 004/2018 (Colegiado de Eng. de Controle e Automação Leopoldina)",
+        "url": "https://www.eng-controleautomacao.leopoldina.cefetmg.br/wp-content/uploads/sites/196/2020/09/RESOLU%C3%87%C3%83O-CCECA-4-2018.pdf"
+      }
+    },
+    "categorias": [
+      {
+        "tipo_sigaa": "Participação em Núcleo Estudantil",
+        "grupo": "OAC",
+        "calculo": "por_semestre",
+        "base_ha": 18,
+        "k": {
+          "presidente": 1,
+          "titular": 0.5,
+          "suplente": 0.25
+        },
+        "teto_pct": {
+          "padrao": 30
+        },
+        "norma": "cceca04_2018",
+        "artigo": "Art. 1º e anexo",
+        "status": "confirmado",
+        "observacao": "Só núcleos credenciados pelo Colegiado: NRL, CREA Júnior, NUMPAI (CCECA 002/2019 e 010/2019) e AEE (CCECA 17/2022). Teto: o de Outras Atividades."
+      }
+    ]
+  }
+}

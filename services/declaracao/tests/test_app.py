@@ -28,12 +28,12 @@ def _texto(pdf: bytes) -> str:
     return ' '.join((PdfReader(BytesIO(pdf)).pages[0].extract_text() or '').split())
 
 
-def kit_pdf(marcado: bool = True) -> bytes:
+def kit_pdf(marcado: bool = True, marca: str = app.KIT_MARCA) -> bytes:
     """Imita a declaração-base gerada pelo Gotenberg: sem data, com a marca nos metadados."""
     buf = BytesIO()
     c = canvas.Canvas(buf)
     if marcado:
-        c.setSubject(app.KIT_MARCA)
+        c.setSubject(marca)
     c.setFont('Helvetica', 10)
     for i, linha in enumerate(CORPO):
         c.drawString(40, 700 - 14 * i, linha)
@@ -75,6 +75,14 @@ def test_carimba_data_na_declaracao_base_do_kit():
     assert 'Leopoldina, 1 de março de 2026' in _texto(pdf)
     # o PDF datado perde a marca de kit
     assert app.KIT_MARCA not in str(PdfReader(BytesIO(pdf)).metadata or {})
+
+
+def test_kit_antigo_v1_recebe_a_data_na_posicao_antiga():
+    import pymupdf
+    for marca, topo in app.KIT_DATA_TOPO_MM.items():
+        pdf = base64.b64decode(app.processar(kit_pdf(marca=marca), '2026-03-01')['pdf_base64'])
+        linha = pymupdf.open(stream=pdf, filetype='pdf')[0].search_for('1 de março de 2026')[0]
+        assert abs(linha.y1 * 25.4 / 72 - topo) < 2, (marca, linha.y1 * 25.4 / 72)
 
 
 def test_reescreve_a_linha_de_uma_declaracao_existente():

@@ -76,7 +76,7 @@ const html = `
     <dl style="margin-top:12px">
       <dt>Período</dt><dd>${esc(c.periodo) || '—'}</dd>
       <dt>Carga do certificado</dt><dd>${c.quantidades?.horas ? `${num(c.quantidades.horas)} h` : '—'}</dd>
-      <dt>Teto da categoria</dt><dd>${num(calc.teto_ha ?? 0)} h/a (${num(calc.teto_pct ?? 0)}% das ${num(calc.total_ac_ha ?? 570)} h/a)</dd>
+      <dt>Teto da categoria</dt><dd>${num(calc.teto_ha ?? 0)} h/a (${num(calc.teto_pct ?? 0)}% das ${num(calc.total_ac_ha)} h/a)</dd>
       <dt>Regra</dt><dd>${calc.url_fonte ? `<a href="${esc(calc.url_fonte)}" target="_blank" rel="noopener">${esc(calc.norma)}</a>, ${esc(calc.artigo)}` : '—'}</dd>
     </dl>
   </div>
@@ -90,7 +90,7 @@ const html = `
     <li>Anexe o PDF baixado (declaração datada + certificado) e cole a descrição.</li>
   </ol>
 
-  <p class="rodape">A validação final é da Coordenação do curso. Matriz considerada: Eng. de Computação Leopoldina, CL2023T (570 h/a).
+  <p class="rodape">A validação final é da Coordenação do curso. Curso e matriz considerados: ${esc(calc.curso)}, ${esc(calc.matriz)} (${num(calc.total_ac_ha)} h/a).
   Nada foi guardado: os arquivos foram descartados ao fim do processamento.</p>
 </div>`;
 
