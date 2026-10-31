@@ -3,7 +3,7 @@
 // Estes rótulos precisam ser iguais aos de n8n/montar-workflow.mjs (um teste confere).
 const ROTULOS = {
   curso: 'Curso',
-  ingresso: 'Ingresso (só Controle e Automação)',
+  ingresso: 'Ingresso / matriz atual',
   certificado: 'Certificado (PDF)',
   modo: 'Declaração de autenticidade',
   nome: 'Nome completo',

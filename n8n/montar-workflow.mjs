@@ -73,9 +73,10 @@ no('Formulário', 'n8n-nodes-base.formTrigger', 2.1, [0, 0], {
         fieldOptions: { values: Object.values(cursos).map((c) => ({ option: c.rotulo_formulario })) },
       },
       {
-        fieldLabel: 'Ingresso (só Controle e Automação)', fieldType: 'radio',
+        fieldLabel: 'Ingresso / matriz atual', fieldType: 'radio', requiredField: true,
         fieldOptions: { values: Object.values(cursos['eng-controle-automacao'].matrizes).map((m) => ({ option: m.rotulo })) },
       },
+      { fieldType: 'html', html: '<p>Se você migrou para o PPC novo, escolha a opção a partir de 2023.1, mesmo que tenha ingressado antes. A matriz atual no SIGAA é a referência.</p>' },
       { fieldLabel: 'Certificado (PDF)', fieldType: 'file', acceptFileTypes: '.pdf', multipleFiles: false, requiredField: true },
       {
         fieldLabel: 'Declaração de autenticidade', fieldType: 'radio', requiredField: true,
@@ -109,6 +110,9 @@ code('Normalizar API', 'normalizar-api', [220, 320]);
 se('Entrada ok?', [440, 160], semErro);
 se('Precisa de declaração?', [660, 100], igual('origem', 'formulario'));
 se('Primeiro uso?', [880, 0], igual('modo', 'primeiro_uso'));
+postPdf('Recortar assinatura', [880, -360], 'http://declaracao:8000/assinatura', 'assinatura');
+code('Preparar assinatura', 'preparar-assinatura', [1100, -360]);
+se('Assinatura ok?', [1320, -360], semErro);
 code('Montar declaração', 'montar-declaracao', [1100, -120]);
 gotenberg('Gotenberg: HTML para PDF', [1320, -120], '/forms/chromium/convert/html', [
   { parameterType: 'formBinaryData', name: 'files', inputDataFieldName: 'html' },
@@ -167,8 +171,12 @@ liga('Entrada ok?', 'Precisa de declaração?', 0);
 liga('Entrada ok?', 'Formatar erro', 1);
 liga('Precisa de declaração?', 'Primeiro uso?', 0);
 liga('Precisa de declaração?', 'Preparar certificado', 1);
-liga('Primeiro uso?', 'Montar declaração', 0);
+liga('Primeiro uso?', 'Recortar assinatura', 0);
 liga('Primeiro uso?', 'Datar declaração', 1);
+liga('Recortar assinatura', 'Preparar assinatura');
+liga('Preparar assinatura', 'Assinatura ok?');
+liga('Assinatura ok?', 'Montar declaração', 0);
+liga('Assinatura ok?', 'Formatar erro', 1);
 liga('Montar declaração', 'Gotenberg: HTML para PDF');
 liga('Gotenberg: HTML para PDF', 'Guardar base');
 liga('Guardar base', 'Datar declaração');

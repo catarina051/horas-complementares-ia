@@ -33,8 +33,9 @@
               }
             },
             {
-              "fieldLabel": "Ingresso (só Controle e Automação)",
+              "fieldLabel": "Ingresso / matriz atual",
               "fieldType": "radio",
+              "requiredField": true,
               "fieldOptions": {
                 "values": [
                   {
@@ -45,6 +46,10 @@
                   }
                 ]
               }
+            },
+            {
+              "fieldType": "html",
+              "html": "<p>Se você migrou para o PPC novo, escolha a opção a partir de 2023.1, mesmo que tenha ingressado antes. A matriz atual no SIGAA é a referência.</p>"
             },
             {
               "fieldLabel": "Certificado (PDF)",
@@ -156,7 +161,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "// Entrada do formulário → campos padronizados e validação do que cada modo exige.\r\n// O Form Trigger 2.1 identifica cada campo pelo rótulo, e o arquivo pelo rótulo com \\W → _.\r\n// Estes rótulos precisam ser iguais aos de n8n/montar-workflow.mjs (um teste confere).\r\nconst ROTULOS = {\r\n  curso: 'Curso',\r\n  ingresso: 'Ingresso (só Controle e Automação)',\r\n  certificado: 'Certificado (PDF)',\r\n  modo: 'Declaração de autenticidade',\r\n  nome: 'Nome completo',\r\n  matricula: 'Matrícula',\r\n  rg: 'RG',\r\n  cpf: 'CPF',\r\n  assinatura: 'Foto da assinatura (JPG ou PNG)',\r\n  declaracao_base: 'Declaração-base (PDF)',\r\n};\r\nconst fs = require('fs');\r\nconst cursos = JSON.parse(fs.readFileSync('/data/regras/cursos.json', 'utf8'));\r\nconst item = $input.first();\r\nconst texto = (chave) => (typeof item.json[ROTULOS[chave]] === 'string' ? item.json[ROTULOS[chave]].trim() : '');\r\nconst recebidos = item.binary ?? {};\r\nconst arquivos = Object.fromEntries(['certificado', 'assinatura', 'declaracao_base']\r\n  .map((chave) => [chave, recebidos[ROTULOS[chave].replace(/\\W/g, '_')]])\r\n  .filter(([, arquivo]) => arquivo));\r\n\r\nconst modo = texto('modo').startsWith('Primeira') ? 'primeiro_uso' : 'reuso';\r\n// As opções de Curso e Ingresso no formulário são os rótulos de regras/cursos.json.\r\nconst [cursoId, curso] = Object.entries(cursos).find(([, c]) => c.rotulo_formulario === texto('curso')) ?? [];\r\nconst matrizId = curso?.matriz_padrao\r\n  ?? Object.entries(curso?.matrizes ?? {}).find(([, m]) => m.rotulo === texto('ingresso'))?.[0];\r\nconst saida = {\r\n  origem: 'formulario',\r\n  modo,\r\n  versao: 'v2',\r\n  curso: cursoId ?? null,\r\n  matriz: matrizId ?? null,\r\n  nome: texto('nome').replace(/\\s+/g, ' '),\r\n  matricula: texto('matricula'),\r\n  rg: texto('rg'),\r\n  cpf: texto('cpf'),\r\n  erro: '',\r\n};\r\n\r\nconst faltando = [];\r\nif (!curso) faltando.push('o curso');\r\nelse if (!matrizId) faltando.push(`o ingresso (obrigatório para ${curso.nome})`);\r\nif (!arquivos.certificado) faltando.push('o certificado');\r\nif (modo === 'primeiro_uso') {\r\n  if (!saida.nome) faltando.push('o nome completo');\r\n  if (!saida.matricula) faltando.push('a matrícula');\r\n  if (!saida.rg) faltando.push('o RG');\r\n  if (!saida.cpf) faltando.push('o CPF');\r\n  if (!arquivos.assinatura) faltando.push('a foto da assinatura');\r\n} else if (!arquivos.declaracao_base) {\r\n  faltando.push('a sua declaração-base (PDF que a ferramenta gerou no primeiro uso)');\r\n}\r\n\r\nconst problemas = [];\r\nif (faltando.length) problemas.push(`Faltou enviar ${faltando.join(', ')}.`);\r\nif (arquivos.certificado && arquivos.certificado.mimeType !== 'application/pdf') {\r\n  problemas.push('O certificado precisa estar em PDF.');\r\n}\r\nif (modo === 'reuso' && arquivos.declaracao_base && arquivos.declaracao_base.mimeType !== 'application/pdf') {\r\n  problemas.push('A declaração-base precisa estar em PDF.');\r\n}\r\nif (modo === 'primeiro_uso') {\r\n  if (arquivos.assinatura && !/^image\\/(png|jpe?g)$/.test(arquivos.assinatura.mimeType)) {\r\n    problemas.push('A assinatura precisa ser uma foto em JPG ou PNG.');\r\n  }\r\n  if (saida.matricula && !/^\\d{6,15}$/.test(saida.matricula)) problemas.push('A matrícula deve ter só números.');\r\n  if (saida.cpf && saida.cpf.replace(/\\D/g, '').length !== 11) problemas.push('O CPF deve ter 11 dígitos.');\r\n}\r\nsaida.erro = problemas.join(' ');\r\n\r\n// Só segue o que o modo usa: no reuso a assinatura e os dados digitados são descartados.\r\nconst binary = { certificado: arquivos.certificado };\r\nif (modo === 'primeiro_uso') binary.assinatura = arquivos.assinatura;\r\nelse binary.declaracao_base = arquivos.declaracao_base;\r\nreturn [{ json: saida, binary }];\r\n"
+        "jsCode": "// Entrada do formulário → campos padronizados e validação do que cada modo exige.\r\n// O Form Trigger 2.1 identifica cada campo pelo rótulo, e o arquivo pelo rótulo com \\W → _.\r\n// Estes rótulos precisam ser iguais aos de n8n/montar-workflow.mjs (um teste confere).\r\nconst ROTULOS = {\r\n  curso: 'Curso',\r\n  ingresso: 'Ingresso / matriz atual',\r\n  certificado: 'Certificado (PDF)',\r\n  modo: 'Declaração de autenticidade',\r\n  nome: 'Nome completo',\r\n  matricula: 'Matrícula',\r\n  rg: 'RG',\r\n  cpf: 'CPF',\r\n  assinatura: 'Foto da assinatura (JPG ou PNG)',\r\n  declaracao_base: 'Declaração-base (PDF)',\r\n};\r\nconst fs = require('fs');\r\nconst cursos = JSON.parse(fs.readFileSync('/data/regras/cursos.json', 'utf8'));\r\nconst item = $input.first();\r\nconst texto = (chave) => (typeof item.json[ROTULOS[chave]] === 'string' ? item.json[ROTULOS[chave]].trim() : '');\r\nconst recebidos = item.binary ?? {};\r\nconst arquivos = Object.fromEntries(['certificado', 'assinatura', 'declaracao_base']\r\n  .map((chave) => [chave, recebidos[ROTULOS[chave].replace(/\\W/g, '_')]])\r\n  .filter(([, arquivo]) => arquivo));\r\n\r\nconst modo = texto('modo').startsWith('Primeira') ? 'primeiro_uso' : 'reuso';\r\n// As opções de Curso e Ingresso no formulário são os rótulos de regras/cursos.json.\r\nconst [cursoId, curso] = Object.entries(cursos).find(([, c]) => c.rotulo_formulario === texto('curso')) ?? [];\r\nconst matrizId = curso?.matriz_padrao\r\n  ?? Object.entries(curso?.matrizes ?? {}).find(([, m]) => m.rotulo === texto('ingresso'))?.[0];\r\nconst saida = {\r\n  origem: 'formulario',\r\n  modo,\r\n  versao: 'v2',\r\n  curso: cursoId ?? null,\r\n  matriz: matrizId ?? null,\r\n  nome: texto('nome').replace(/\\s+/g, ' '),\r\n  matricula: texto('matricula'),\r\n  rg: texto('rg'),\r\n  cpf: texto('cpf'),\r\n  erro: '',\r\n};\r\n\r\nconst faltando = [];\r\nif (!curso) faltando.push('o curso');\r\nelse if (!matrizId) faltando.push(`o ingresso (obrigatório para ${curso.nome})`);\r\nif (!arquivos.certificado) faltando.push('o certificado');\r\nif (modo === 'primeiro_uso') {\r\n  if (!saida.nome) faltando.push('o nome completo');\r\n  if (!saida.matricula) faltando.push('a matrícula');\r\n  if (!saida.rg) faltando.push('o RG');\r\n  if (!saida.cpf) faltando.push('o CPF');\r\n  if (!arquivos.assinatura) faltando.push('a foto da assinatura');\r\n} else if (!arquivos.declaracao_base) {\r\n  faltando.push('a sua declaração-base (PDF que a ferramenta gerou no primeiro uso)');\r\n}\r\n\r\nconst problemas = [];\r\nif (faltando.length) problemas.push(`Faltou enviar ${faltando.join(', ')}.`);\r\nif (arquivos.certificado && arquivos.certificado.mimeType !== 'application/pdf') {\r\n  problemas.push('O certificado precisa estar em PDF.');\r\n}\r\nif (modo === 'reuso' && arquivos.declaracao_base && arquivos.declaracao_base.mimeType !== 'application/pdf') {\r\n  problemas.push('A declaração-base precisa estar em PDF.');\r\n}\r\nif (modo === 'primeiro_uso') {\r\n  if (arquivos.assinatura && !/^image\\/(png|jpe?g)$/.test(arquivos.assinatura.mimeType)) {\r\n    problemas.push('A assinatura precisa ser uma foto em JPG ou PNG.');\r\n  }\r\n  if (saida.matricula && !/^\\d{6,15}$/.test(saida.matricula)) problemas.push('A matrícula deve ter só números.');\r\n  if (saida.cpf && saida.cpf.replace(/\\D/g, '').length !== 11) problemas.push('O CPF deve ter 11 dígitos.');\r\n}\r\nsaida.erro = problemas.join(' ');\r\n\r\n// Só segue o que o modo usa: no reuso a assinatura e os dados digitados são descartados.\r\nconst binary = { certificado: arquivos.certificado };\r\nif (modo === 'primeiro_uso') binary.assinatura = arquivos.assinatura;\r\nelse binary.declaracao_base = arquivos.declaracao_base;\r\nreturn [{ json: saida, binary }];\r\n"
       }
     },
     {
@@ -274,6 +279,81 @@
     },
     {
       "id": "hc-08",
+      "name": "Recortar assinatura",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        -360
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://declaracao:8000/assinatura",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "assinatura",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "hc-09",
+      "name": "Preparar assinatura",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        -360
+      ],
+      "parameters": {
+        "jsCode": "// Recupera a entrada do formulário e substitui a foto pelo PNG recortado localmente.\nconst item = $('Normalizar formulário').first();\nconst resposta = $input.first().json;\nif (resposta.statusCode !== 200 || !resposta.body?.imagem_base64) {\n  return [{ json: { ...item.json, erro: resposta.body?.erro ?? 'Não consegui recortar a assinatura. Envie uma foto nítida em papel branco.' } }];\n}\nconst assinatura = await this.helpers.prepareBinaryData(\n  Buffer.from(resposta.body.imagem_base64, 'base64'), 'assinatura.png', 'image/png',\n);\nreturn [{ json: item.json, binary: { ...item.binary, assinatura } }];\n"
+      }
+    },
+    {
+      "id": "hc-10",
+      "name": "Assinatura ok?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        -360
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Assinatura ok?-cond",
+              "leftValue": "={{ $json.erro }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "hc-11",
       "name": "Montar declaração",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -286,7 +366,7 @@
       }
     },
     {
-      "id": "hc-09",
+      "id": "hc-12",
       "name": "Gotenberg: HTML para PDF",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -333,7 +413,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "hc-10",
+      "id": "hc-13",
       "name": "Guardar base",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -346,7 +426,7 @@
       }
     },
     {
-      "id": "hc-11",
+      "id": "hc-14",
       "name": "Datar declaração",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -374,7 +454,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "hc-12",
+      "id": "hc-15",
       "name": "Preparar certificado",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -387,7 +467,7 @@
       }
     },
     {
-      "id": "hc-13",
+      "id": "hc-16",
       "name": "Declaração ok?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -421,7 +501,7 @@
       }
     },
     {
-      "id": "hc-14",
+      "id": "hc-17",
       "name": "Extrair texto",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -449,7 +529,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "hc-15",
+      "id": "hc-18",
       "name": "Anonimizar",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -462,7 +542,7 @@
       }
     },
     {
-      "id": "hc-16",
+      "id": "hc-19",
       "name": "Texto ok?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -496,7 +576,7 @@
       }
     },
     {
-      "id": "hc-17",
+      "id": "hc-20",
       "name": "Montar requisição",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -509,7 +589,7 @@
       }
     },
     {
-      "id": "hc-18",
+      "id": "hc-21",
       "name": "Sem chave do Gemini?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -543,7 +623,7 @@
       }
     },
     {
-      "id": "hc-19",
+      "id": "hc-22",
       "name": "Resposta simulada",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -556,7 +636,7 @@
       }
     },
     {
-      "id": "hc-20",
+      "id": "hc-23",
       "name": "Gemini",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -593,7 +673,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "hc-21",
+      "id": "hc-24",
       "name": "Validar e calcular",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -602,11 +682,11 @@
         160
       ],
       "parameters": {
-        "jsCode": "// Valida a resposta do modelo e calcula as horas pelas regras de regras/:\n// base-cgrad-05-23.json (comum a todos) + cursos.json (total da matriz e categorias do colegiado).\n// O modelo só escolhe categoria, variante e quantidades; toda conta é feita aqui.\nconst fs = require('fs');\nconst regrasBase = JSON.parse(fs.readFileSync('/data/regras/base-cgrad-05-23.json', 'utf8'));\nconst cursos = JSON.parse(fs.readFileSync('/data/regras/cursos.json', 'utf8'));\nconst base = $('Montar requisição').first().json;\nconst r = $input.first().json;\n\nconst num = (v) => Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 });\nconst arred = (v) => Math.round(v * 100) / 100;\nconst UNIDADE = {\n  por_hora: 'horas', por_dia: 'dias', por_mes: 'meses', por_semestre: 'semestres', por_ano: 'anos', por_quantidade: 'quantidade',\n};\nconst ROTULO_UNIDADE = { horas: 'a carga horária', quantidade: 'a quantidade (organizações, trabalhos)' };\n\nfunction calcular(regrasBase, curso, matrizId, c) {\n  const matriz = curso.matrizes[matrizId];\n  // A regra do colegiado do curso vale no lugar da geral quando as duas tratam da mesma categoria.\n  const cat = curso.categorias.find((x) => x.tipo_sigaa === c.tipo_sigaa)\n    ?? regrasBase.categorias.find((x) => x.tipo_sigaa === c.tipo_sigaa);\n  const contexto = { curso: curso.nome, matriz: matriz.rotulo, total_ac_ha: matriz.total_ac_ha };\n  if (!cat) return { ...contexto, status: 'a_confirmar', motivo: `Esta categoria não existe para ${curso.nome}.` };\n\n  const fonte = curso.fontes[cat.norma] ?? regrasBase.fontes[cat.norma];\n  const tetoPct = cat.teto_pct[c.variante] ?? cat.teto_pct.padrao;\n  const resultado = {\n    ...contexto,\n    status: 'confirmado',\n    teto_pct: tetoPct,\n    teto_ha: arred((matriz.total_ac_ha * tetoPct) / 100),\n    norma: fonte.nome,\n    artigo: cat.artigo,\n    url_fonte: fonte.url,\n    observacao: cat.observacao ?? null,\n    ha_calculadas: null,\n    ha_abatidas: null,\n    conta: null,\n  };\n  if (cat.calculo === 'a_definir') {\n    return { ...resultado, status: 'a_confirmar', motivo: 'A norma não define a fórmula: a Coordenação decide o valor.' };\n  }\n\n  const k = cat.k[c.variante] ?? cat.k.padrao;\n  if (k === undefined) {\n    return { ...resultado, status: 'a_confirmar', motivo: `Não sei qual fator usar (variante \"${c.variante}\").` };\n  }\n\n  const unidade = UNIDADE[cat.calculo];\n  const qtd = unidade ? Number(c.quantidades?.[unidade]) : 1;\n  if (unidade && !(qtd > 0)) {\n    return { ...resultado, status: 'a_confirmar', motivo: `O certificado não informa ${ROTULO_UNIDADE[unidade] ?? `o número de ${unidade}`}.` };\n  }\n\n  let ha;\n  let conta;\n  if (cat.calculo === 'por_hora') {\n    const fator = cat.ha_por_hora ?? 1.2;\n    ha = k * qtd * fator;\n    conta = `${num(qtd)} h × K ${num(k)} × ${num(fator)}`;\n  } else if (cat.calculo === 'por_dia') {\n    ha = k * 9.6 * qtd;\n    conta = `${num(qtd)} dia(s) × 9,6 × K ${num(k)}`;\n  } else if (cat.calculo === 'fixo') {\n    ha = k * cat.base_ha;\n    conta = `${num(cat.base_ha)} h/a × K ${num(k)}`;\n  } else {\n    ha = k * cat.base_ha * qtd;\n    conta = `${num(qtd)} ${unidade} × ${num(cat.base_ha)} h/a × K ${num(k)}`;\n  }\n  ha = arred(ha);\n  return {\n    ...resultado,\n    ha_calculadas: ha,\n    ha_abatidas: Math.min(ha, resultado.teto_ha),\n    limitado_pelo_teto: ha > resultado.teto_ha,\n    conta: `${conta} = ${num(ha)} h/a`,\n  };\n}\n\nconst falha = (erro) => [{ json: { origem: base.origem, modo: base.modo, erro } }];\n\nif (r.statusCode === 429) return falha('O limite gratuito do modelo de IA acabou por agora. Tente de novo em alguns minutos.');\nif (r.statusCode === 503) return falha('O modelo de IA está sobrecarregado agora. Tente de novo em alguns minutos.');\nif (r.statusCode === undefined && /timeout|aborted/i.test(r.error?.message ?? '')) {\n  return falha('O modelo de IA demorou demais para responder. Tente de novo.');\n}\nif (r.statusCode !== 200) return falha(`O modelo de IA não respondeu (erro ${r.statusCode ?? 'de rede'}). Tente de novo.`);\n\nlet c;\ntry {\n  c = JSON.parse(r.body.candidates[0].content.parts[0].text);\n} catch (e) {\n  return falha('O modelo de IA devolveu uma resposta fora do formato. Tente de novo.');\n}\nif (!c.e_comprovante) {\n  return falha(`Este arquivo não parece um certificado ou comprovante de atividade. ${c.justificativa ?? ''}`.trim());\n}\n\nconst horas = Number(c.quantidades?.horas);\nconst uso = r.body.usageMetadata ?? {};\nreturn [{\n  json: {\n    origem: base.origem,\n    modo: base.modo,\n    versao: base.versao,\n    modelo: base.modelo,\n    curso: base.curso,\n    matriz: base.matriz,\n    simulado: Boolean(r.simulado),\n    linha_data: base.linha_data,\n    classificacao: c,\n    calculo: calcular(regrasBase, cursos[base.curso], base.matriz, c),\n    ha_certificado: horas > 0 ? arred(horas * 1.2) : null,\n    tokens: { entrada: uso.promptTokenCount ?? 0, saida: uso.candidatesTokenCount ?? 0 },\n    erro: '',\n  },\n}];\n"
+        "jsCode": "// Valida a resposta do modelo e calcula as horas pelas regras de regras/:\n// base-cgrad-05-23.json (comum a todos) + cursos.json (total da matriz e categorias do colegiado).\n// O modelo só escolhe categoria, variante e quantidades; toda conta é feita aqui.\nconst fs = require('fs');\nconst regrasBase = JSON.parse(fs.readFileSync('/data/regras/base-cgrad-05-23.json', 'utf8'));\nconst cursos = JSON.parse(fs.readFileSync('/data/regras/cursos.json', 'utf8'));\nconst tiposSigaa = JSON.parse(fs.readFileSync('/data/regras/tipos-sigaa.json', 'utf8'));\nconst base = $('Montar requisição').first().json;\nconst r = $input.first().json;\n\nconst num = (v) => Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 });\nconst arred = (v) => Math.round(v * 100) / 100;\nconst UNIDADE = {\n  por_hora: 'horas', por_dia: 'dias', por_mes: 'meses', por_semestre: 'semestres', por_ano: 'anos', por_quantidade: 'quantidade',\n};\nconst ROTULO_UNIDADE = { horas: 'a carga horária', quantidade: 'a quantidade (organizações, trabalhos)' };\n\nfunction calcular(regrasBase, curso, matrizId, c) {\n  const matriz = curso.matrizes[matrizId];\n  // A regra do colegiado do curso vale no lugar da geral quando as duas tratam da mesma categoria.\n  const cat = curso.categorias.find((x) => x.tipo_sigaa === c.tipo_sigaa)\n    ?? regrasBase.categorias.find((x) => x.tipo_sigaa === c.tipo_sigaa);\n  const contexto = { curso: curso.nome, matriz: matriz.rotulo, total_ac_ha: matriz.total_ac_ha };\n  if (!cat) return { ...contexto, status: 'a_confirmar', motivo: `Esta categoria não existe para ${curso.nome}.` };\n\n  const fonte = curso.fontes[cat.norma] ?? regrasBase.fontes[cat.norma];\n  const tetoPct = cat.teto_pct[c.variante] ?? cat.teto_pct.padrao;\n  const resultado = {\n    ...contexto,\n    status: 'confirmado',\n    teto_pct: tetoPct,\n    teto_ha: arred((matriz.total_ac_ha * tetoPct) / 100),\n    norma: fonte.nome,\n    artigo: cat.artigo,\n    url_fonte: fonte.url,\n    observacao: cat.observacao ?? null,\n    ha_calculadas: null,\n    ha_abatidas: null,\n    conta: null,\n  };\n  if (cat.calculo === 'a_definir') {\n    return { ...resultado, status: 'a_confirmar', motivo: 'A norma não define a fórmula: a Coordenação decide o valor.' };\n  }\n\n  const k = cat.k[c.variante] ?? cat.k.padrao;\n  if (k === undefined) {\n    return { ...resultado, status: 'a_confirmar', motivo: `Não sei qual fator usar (variante \"${c.variante}\").` };\n  }\n\n  const unidade = UNIDADE[cat.calculo];\n  const qtd = unidade ? Number(c.quantidades?.[unidade]) : 1;\n  if (unidade && !(qtd > 0)) {\n    return { ...resultado, status: 'a_confirmar', motivo: `O certificado não informa ${ROTULO_UNIDADE[unidade] ?? `o número de ${unidade}`}.` };\n  }\n\n  let ha;\n  let conta;\n  if (cat.calculo === 'por_hora') {\n    const fator = cat.ha_por_hora ?? 1.2;\n    ha = k * qtd * fator;\n    conta = `${num(qtd)} h × K ${num(k)} × ${num(fator)}`;\n  } else if (cat.calculo === 'por_dia') {\n    ha = k * 9.6 * qtd;\n    conta = `${num(qtd)} dia(s) × 9,6 × K ${num(k)}`;\n  } else if (cat.calculo === 'fixo') {\n    ha = k * cat.base_ha;\n    conta = `${num(cat.base_ha)} h/a × K ${num(k)}`;\n  } else {\n    ha = k * cat.base_ha * qtd;\n    conta = `${num(qtd)} ${unidade} × ${num(cat.base_ha)} h/a × K ${num(k)}`;\n  }\n  ha = arred(ha);\n  return {\n    ...resultado,\n    ha_calculadas: ha,\n    ha_abatidas: Math.min(ha, resultado.teto_ha),\n    limitado_pelo_teto: ha > resultado.teto_ha,\n    conta: `${conta} = ${num(ha)} h/a`,\n  };\n}\n\nconst falha = (erro) => [{ json: { origem: base.origem, modo: base.modo, erro } }];\n\nif (r.statusCode === 429) return falha('O limite gratuito do modelo de IA acabou por agora. Tente de novo em alguns minutos.');\nif (r.statusCode === 503) return falha('O modelo de IA está sobrecarregado agora. Tente de novo em alguns minutos.');\nif (r.statusCode === undefined && /timeout|aborted/i.test(r.error?.message ?? '')) {\n  return falha('O modelo de IA demorou demais para responder. Tente de novo.');\n}\nif (r.statusCode !== 200) return falha(`O modelo de IA não respondeu (erro ${r.statusCode ?? 'de rede'}). Tente de novo.`);\n\nlet c;\ntry {\n  c = JSON.parse(r.body.candidates[0].content.parts[0].text);\n} catch (e) {\n  return falha('O modelo de IA devolveu uma resposta fora do formato. Tente de novo.');\n}\nif (!c.e_comprovante) {\n  return falha(`Este arquivo não parece um certificado ou comprovante de atividade. ${c.justificativa ?? ''}`.trim());\n}\n\nconst horas = Number(c.quantidades?.horas);\nconst uso = r.body.usageMetadata ?? {};\n// Identificadores e rótulos vêm das capturas do SIGAA, nunca do modelo.\nconst codigoSigaa = cursos[base.curso].matrizes[base.matriz].codigo_sigaa;\nlet varianteSigaa = c.variante;\nif (codigoSigaa === '7878 / ECA2021' && c.tipo_sigaa === 'Participação em Programas de Intercâmbio cultural/estudantil') {\n  const meses = Number(c.quantidades?.meses) || Number(c.quantidades?.anos) * 12;\n  varianteSigaa = meses >= 12 ? 'um_ano_ou_mais' : meses === 6 ? 'seis_meses' : null;\n}\nconst opcoes = (tiposSigaa.matrizes[codigoSigaa] ?? []).filter((o) => (\n  o.categoria === c.tipo_sigaa && (o.variante === varianteSigaa || o.variante === '*')\n));\nconst sigaa = {\n  codigo: codigoSigaa,\n  opcao: opcoes.length === 1 ? opcoes[0].opcao : null,\n  status: opcoes.length === 1 ? 'confirmado' : 'a_confirmar',\n  motivo: opcoes.length === 1 ? null : 'Não há uma opção confirmada nas capturas para esta categoria e variante. Confira o tipo com a Coordenação antes de lançar.',\n};\nreturn [{\n  json: {\n    origem: base.origem,\n    modo: base.modo,\n    versao: base.versao,\n    modelo: base.modelo,\n    curso: base.curso,\n    matriz: base.matriz,\n    simulado: Boolean(r.simulado),\n    linha_data: base.linha_data,\n    classificacao: c,\n    sigaa,\n    calculo: calcular(regrasBase, cursos[base.curso], base.matriz, c),\n    ha_certificado: horas > 0 ? arred(horas * 1.2) : null,\n    tokens: { entrada: uso.promptTokenCount ?? 0, saida: uso.candidatesTokenCount ?? 0 },\n    erro: '',\n  },\n}];\n"
       }
     },
     {
-      "id": "hc-22",
+      "id": "hc-25",
       "name": "Classificação ok?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -640,7 +720,7 @@
       }
     },
     {
-      "id": "hc-23",
+      "id": "hc-26",
       "name": "Veio do formulário?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -673,7 +753,7 @@
       }
     },
     {
-      "id": "hc-24",
+      "id": "hc-27",
       "name": "Preparar merge",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -686,7 +766,7 @@
       }
     },
     {
-      "id": "hc-25",
+      "id": "hc-28",
       "name": "Gotenberg: juntar PDFs",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -726,7 +806,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "hc-26",
+      "id": "hc-29",
       "name": "Montar página",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -735,11 +815,11 @@
         0
       ],
       "parameters": {
-        "jsCode": "// Página de resultado: o que marcar no SIGAA, quantas horas abatem e os PDFs para baixar.\r\n// O formulário do n8n troca o corpo da página por este HTML (sem scripts), então tudo é estático.\r\nconst r = $('Validar e calcular').first().json;\r\nconst final = $input.first().binary?.pdf_final;\r\nif (!final) throw new Error(`Gotenberg não juntou os PDFs: ${$input.first().json.error?.message ?? 'sem resposta'}`);\r\n\r\nconst c = r.classificacao;\r\nconst calc = r.calculo;\r\nconst esc = (s) => String(s ?? '').replace(/[&<>\"']/g, (ch) => (\r\n  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[ch]\r\n));\r\nconst num = (v) => Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 });\r\nconst slug = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '')\r\n  .replace(/[^\\w]+/g, '_').replace(/^_|_$/g, '').slice(0, 50) || 'atividade';\r\n\r\nconst pdfFinal = (await this.helpers.getBinaryDataBuffer(0, 'pdf_final')).toString('base64');\r\nconst pdfBase = r.modo === 'primeiro_uso' ? $('Guardar base').first().json.declaracao_base_b64 : null;\r\n\r\nconst horas = calc.ha_abatidas !== null\r\n  ? `<p class=\"valor\">${num(calc.ha_abatidas)} h/a</p>\r\n     <p class=\"conta\">${esc(calc.conta)}${calc.limitado_pelo_teto ? ` → limitado ao teto de ${num(calc.teto_ha)} h/a` : ''}</p>`\r\n  : `<p class=\"valor pendente\">A confirmar</p><p class=\"conta\">${esc(calc.motivo)} Confirme com a Coordenação.</p>`;\r\n\r\nconst alertas = [];\r\nif (r.simulado) alertas.push('<strong>Modo demonstração:</strong> sem chave do Gemini, a classificação foi feita por palavras-chave. Não use este resultado.');\r\nif (c.alerta_instrucao_suspeita) alertas.push('O certificado contém um texto que tenta instruir a IA. Ele foi ignorado, mas confira se o documento é legítimo.');\r\nif (c.confianca !== 'alta') alertas.push(`Confiança <strong>${esc(c.confianca)}</strong>: ${esc(c.justificativa)}${c.alternativas?.length ? ` Outras opções possíveis: ${c.alternativas.map(esc).join('; ')}.` : ''}`);\r\nif (c.evidencia_faltante) alertas.push(`Falta no certificado: ${esc(c.evidencia_faltante)}`);\r\n\r\nconst html = `\r\n<style>\r\n  #hc { max-width: 680px; margin: 24px auto; padding: 0 16px; font-family: system-ui, -apple-system, \"Segoe UI\", sans-serif; color: #1f2328; line-height: 1.5; }\r\n  #hc h1 { font-size: 22px; margin: 0 0 4px; }\r\n  #hc .sub { color: #59636e; margin: 0 0 20px; }\r\n  #hc .destaque { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }\r\n  #hc .card { border: 1px solid #d1d9e0; border-radius: 10px; padding: 14px 16px; background: #fff; }\r\n  #hc .rotulo { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #59636e; margin: 0 0 4px; }\r\n  #hc .tipo { font-size: 17px; font-weight: 650; margin: 0; }\r\n  #hc .valor { font-size: 28px; font-weight: 700; margin: 0; color: #1a7f37; }\r\n  #hc .valor.pendente { color: #9a6700; font-size: 22px; }\r\n  #hc .conta { font-size: 13px; color: #59636e; margin: 4px 0 0; }\r\n  #hc .alerta { border-left: 4px solid #d4a72c; background: #fff8c5; padding: 10px 12px; border-radius: 6px; margin: 0 0 10px; font-size: 14px; }\r\n  #hc dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; font-size: 14px; }\r\n  #hc dt { color: #59636e; }\r\n  #hc dd { margin: 0; }\r\n  #hc textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; padding: 8px; border: 1px solid #d1d9e0; border-radius: 6px; resize: vertical; }\r\n  #hc .botoes { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }\r\n  #hc .botao { display: inline-block; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; }\r\n  #hc .primario { background: #1f6feb; color: #fff; }\r\n  #hc .secundario { background: #f6f8fa; color: #1f2328; border: 1px solid #d1d9e0; }\r\n  #hc ol { padding-left: 20px; font-size: 14px; }\r\n  #hc .rodape { font-size: 12px; color: #59636e; border-top: 1px solid #d1d9e0; padding-top: 12px; margin-top: 20px; }\r\n  #hc a { color: #0969da; }\r\n  @media (max-width: 520px) { #hc .destaque { grid-template-columns: 1fr; } }\r\n</style>\r\n<div id=\"hc\">\r\n  <h1>Pronto para lançar no SIGAA</h1>\r\n  <p class=\"sub\">${esc(c.atividade)} · ${esc(c.instituicao)}</p>\r\n\r\n  <div class=\"destaque\">\r\n    <div class=\"card\"><p class=\"rotulo\">Marque no SIGAA</p><p class=\"tipo\">${esc(c.tipo_sigaa)}</p></div>\r\n    <div class=\"card\"><p class=\"rotulo\">Horas que serão abatidas</p>${horas}</div>\r\n  </div>\r\n\r\n  ${alertas.map((a) => `<p class=\"alerta\">${a}</p>`).join('\\n  ')}\r\n\r\n  <div class=\"botoes\">\r\n    <a class=\"botao primario\" download=\"AC_${slug(c.atividade)}.pdf\" href=\"data:application/pdf;base64,${pdfFinal}\">Baixar PDF para o SIGAA</a>\r\n    ${pdfBase ? `<a class=\"botao secundario\" download=\"minha-declaracao-base.pdf\" href=\"data:application/pdf;base64,${pdfBase}\">Baixar minha declaração-base</a>` : ''}\r\n  </div>\r\n  ${pdfBase ? '<p class=\"conta\" style=\"margin:-8px 0 16px\">Guarde a declaração-base: no próximo certificado, escolha \"Já tenho minha declaração-base\" e envie só ela e o certificado. A data é trocada sozinha.</p>' : ''}\r\n\r\n  <div class=\"card\">\r\n    <p class=\"rotulo\">Descrição para colar no SIGAA</p>\r\n    <textarea rows=\"2\" readonly>${esc(c.descricao_sigaa)}</textarea>\r\n    <dl style=\"margin-top:12px\">\r\n      <dt>Período</dt><dd>${esc(c.periodo) || '—'}</dd>\r\n      <dt>Carga do certificado</dt><dd>${c.quantidades?.horas ? `${num(c.quantidades.horas)} h` : '—'}</dd>\r\n      <dt>Teto da categoria</dt><dd>${num(calc.teto_ha ?? 0)} h/a (${num(calc.teto_pct ?? 0)}% das ${num(calc.total_ac_ha)} h/a)</dd>\r\n      <dt>Regra</dt><dd>${calc.url_fonte ? `<a href=\"${esc(calc.url_fonte)}\" target=\"_blank\" rel=\"noopener\">${esc(calc.norma)}</a>, ${esc(calc.artigo)}` : '—'}</dd>\r\n    </dl>\r\n  </div>\r\n\r\n  <p class=\"conta\">O teto é somado por categoria. Se você já tem ${num(calc.teto_ha ?? 0)} h/a lançadas em \"${esc(c.tipo_sigaa)}\", este certificado não abate mais nada.</p>\r\n\r\n  <p class=\"rotulo\" style=\"margin-top:18px\">Como lançar</p>\r\n  <ol>\r\n    <li>SIGAA → Portal do Discente → Ensino → Registro de Atividades Complementares (ou Autônomas) → Cadastrar Novo Registro.</li>\r\n    <li>Tipo: <strong>${esc(c.tipo_sigaa)}</strong>.</li>\r\n    <li>Anexe o PDF baixado (declaração datada + certificado) e cole a descrição.</li>\r\n  </ol>\r\n\r\n  <p class=\"rodape\">A validação final é da Coordenação do curso. Curso e matriz considerados: ${esc(calc.curso)}, ${esc(calc.matriz)} (${num(calc.total_ac_ha)} h/a).\r\n  Nada foi guardado: os arquivos foram descartados ao fim do processamento.</p>\r\n</div>`;\r\n\r\nreturn [{ json: { resposta: html, content_type: 'text/html; charset=utf-8', status: 200 } }];\r\n"
+        "jsCode": "// Página de resultado: o que marcar no SIGAA, quantas horas abatem e os PDFs para baixar.\r\n// O formulário do n8n troca o corpo da página por este HTML (sem scripts), então tudo é estático.\r\nconst r = $('Validar e calcular').first().json;\r\nconst final = $input.first().binary?.pdf_final;\r\nif (!final) throw new Error(`Gotenberg não juntou os PDFs: ${$input.first().json.error?.message ?? 'sem resposta'}`);\r\n\r\nconst c = r.classificacao;\r\nconst calc = r.calculo;\r\nconst sigaa = r.sigaa;\r\nconst tipoCompleto = sigaa.opcao ?? c.tipo_sigaa;\r\nconst esc = (s) => String(s ?? '').replace(/[&<>\"']/g, (ch) => (\r\n  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[ch]\r\n));\r\nconst num = (v) => Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 });\r\nconst slug = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '')\r\n  .replace(/[^\\w]+/g, '_').replace(/^_|_$/g, '').slice(0, 50) || 'atividade';\r\n\r\nconst pdfFinal = (await this.helpers.getBinaryDataBuffer(0, 'pdf_final')).toString('base64');\r\nconst pdfBase = r.modo === 'primeiro_uso' ? $('Guardar base').first().json.declaracao_base_b64 : null;\r\n\r\nconst horas = calc.ha_abatidas !== null\r\n  ? `<p class=\"valor\">${num(calc.ha_abatidas)} h/a</p>\r\n     <p class=\"conta\">${esc(calc.conta)}${calc.limitado_pelo_teto ? ` → limitado ao teto de ${num(calc.teto_ha)} h/a` : ''}</p>`\r\n  : `<p class=\"valor pendente\">A confirmar</p><p class=\"conta\">${esc(calc.motivo)} Confirme com a Coordenação.</p>`;\r\n\r\nconst alertas = [];\r\nif (sigaa.status !== 'confirmado') alertas.push(esc(sigaa.motivo));\r\nif (r.simulado) alertas.push('<strong>Modo demonstração:</strong> sem chave do Gemini, a classificação foi feita por palavras-chave. Não use este resultado.');\r\nif (c.alerta_instrucao_suspeita) alertas.push('O certificado contém um texto que tenta instruir a IA. Ele foi ignorado, mas confira se o documento é legítimo.');\r\nif (c.confianca !== 'alta') alertas.push(`Confiança <strong>${esc(c.confianca)}</strong>: ${esc(c.justificativa)}${c.alternativas?.length ? ` Outras opções possíveis: ${c.alternativas.map(esc).join('; ')}.` : ''}`);\r\nif (c.evidencia_faltante) alertas.push(`Falta no certificado: ${esc(c.evidencia_faltante)}`);\r\n\r\nconst html = `\r\n<style>\r\n  #hc { max-width: 680px; margin: 24px auto; padding: 0 16px; font-family: system-ui, -apple-system, \"Segoe UI\", sans-serif; color: #1f2328; line-height: 1.5; }\r\n  #hc h1 { font-size: 22px; margin: 0 0 4px; }\r\n  #hc .sub { color: #59636e; margin: 0 0 20px; }\r\n  #hc .destaque { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }\r\n  #hc .card { border: 1px solid #d1d9e0; border-radius: 10px; padding: 14px 16px; background: #fff; }\r\n  #hc .rotulo { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #59636e; margin: 0 0 4px; }\r\n  #hc .tipo { font-size: 17px; font-weight: 650; margin: 0; }\r\n  #hc .valor { font-size: 28px; font-weight: 700; margin: 0; color: #1a7f37; }\r\n  #hc .valor.pendente { color: #9a6700; font-size: 22px; }\r\n  #hc .conta { font-size: 13px; color: #59636e; margin: 4px 0 0; }\r\n  #hc .alerta { border-left: 4px solid #d4a72c; background: #fff8c5; padding: 10px 12px; border-radius: 6px; margin: 0 0 10px; font-size: 14px; }\r\n  #hc dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; font-size: 14px; }\r\n  #hc dt { color: #59636e; }\r\n  #hc dd { margin: 0; }\r\n  #hc textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; padding: 8px; border: 1px solid #d1d9e0; border-radius: 6px; resize: vertical; }\r\n  #hc .botoes { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }\r\n  #hc .botao { display: inline-block; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; }\r\n  #hc .primario { background: #1f6feb; color: #fff; }\r\n  #hc .secundario { background: #f6f8fa; color: #1f2328; border: 1px solid #d1d9e0; }\r\n  #hc ol { padding-left: 20px; font-size: 14px; }\r\n  #hc .rodape { font-size: 12px; color: #59636e; border-top: 1px solid #d1d9e0; padding-top: 12px; margin-top: 20px; }\r\n  #hc a { color: #0969da; }\r\n  @media (max-width: 520px) { #hc .destaque { grid-template-columns: 1fr; } }\r\n</style>\r\n<div id=\"hc\">\r\n  <h1>Pronto para lançar no SIGAA</h1>\r\n  <p class=\"sub\">${esc(c.atividade)} · ${esc(c.instituicao)}</p>\r\n\r\n  <div class=\"destaque\">\r\n    <div class=\"card\"><p class=\"rotulo\">${sigaa.opcao ? 'Marque no SIGAA' : 'Tipo a confirmar no SIGAA'}</p><p class=\"tipo\">${esc(tipoCompleto)}</p><p class=\"conta\">Código: <strong>${esc(sigaa.codigo)}</strong></p></div>\r\n    <div class=\"card\"><p class=\"rotulo\">Horas que serão abatidas</p>${horas}</div>\r\n  </div>\r\n\r\n  ${alertas.map((a) => `<p class=\"alerta\">${a}</p>`).join('\\n  ')}\r\n\r\n  <div class=\"botoes\">\r\n    <a class=\"botao primario\" download=\"AC_${slug(c.atividade)}.pdf\" href=\"data:application/pdf;base64,${pdfFinal}\">Baixar PDF para o SIGAA</a>\r\n    ${pdfBase ? `<a class=\"botao secundario\" download=\"minha-declaracao-base.pdf\" href=\"data:application/pdf;base64,${pdfBase}\">Baixar minha declaração-base</a>` : ''}\r\n  </div>\r\n  ${pdfBase ? '<p class=\"conta\" style=\"margin:-8px 0 16px\">Guarde a declaração-base: no próximo certificado, escolha \"Já tenho minha declaração-base\" e envie só ela e o certificado. A data é trocada sozinha.</p>' : ''}\r\n\r\n  <div class=\"card\">\r\n    <p class=\"rotulo\">Descrição para colar no SIGAA</p>\r\n    <textarea rows=\"2\" readonly>${esc(c.descricao_sigaa)}</textarea>\r\n    <dl style=\"margin-top:12px\">\r\n      <dt>Período</dt><dd>${esc(c.periodo) || '—'}</dd>\r\n      <dt>Carga do certificado</dt><dd>${c.quantidades?.horas ? `${num(c.quantidades.horas)} h` : '—'}</dd>\r\n      <dt>Teto da categoria</dt><dd>${num(calc.teto_ha ?? 0)} h/a (${num(calc.teto_pct ?? 0)}% das ${num(calc.total_ac_ha)} h/a)</dd>\r\n      <dt>Regra</dt><dd>${calc.url_fonte ? `<a href=\"${esc(calc.url_fonte)}\" target=\"_blank\" rel=\"noopener\">${esc(calc.norma)}</a>, ${esc(calc.artigo)}` : '—'}</dd>\r\n    </dl>\r\n  </div>\r\n\r\n  <p class=\"conta\">O teto é somado por categoria. Se você já tem ${num(calc.teto_ha ?? 0)} h/a lançadas em \"${esc(c.tipo_sigaa)}\", este certificado não abate mais nada.</p>\r\n\r\n  <p class=\"rotulo\" style=\"margin-top:18px\">Como lançar</p>\r\n  <ol>\r\n    <li>SIGAA → Portal do Discente → Ensino → Registro de Atividades Complementares (ou Autônomas) → Cadastrar Novo Registro.</li>\r\n    <li>Tipo: <strong>${esc(tipoCompleto)}</strong> (código ${esc(sigaa.codigo)}).${sigaa.opcao ? '' : ' Confirme a opção com a Coordenação antes de lançar.'}</li>\r\n    <li>Anexe o PDF baixado (declaração datada + certificado) e cole a descrição.</li>\r\n  </ol>\r\n\r\n  <p class=\"rodape\">A validação final é da Coordenação do curso. Curso e matriz considerados: ${esc(calc.curso)}, ${esc(calc.matriz)} (${num(calc.total_ac_ha)} h/a).\r\n  Nada foi guardado: os arquivos foram descartados ao fim do processamento.</p>\r\n</div>`;\r\n\r\nreturn [{ json: { resposta: html, content_type: 'text/html; charset=utf-8', status: 200 } }];\r\n"
       }
     },
     {
-      "id": "hc-27",
+      "id": "hc-30",
       "name": "Resposta API",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -748,11 +828,11 @@
         220
       ],
       "parameters": {
-        "jsCode": "// Resposta JSON da API de avaliação.\nconst r = $input.first().json;\nconst corpo = {\n  versao: r.versao,\n  modelo: r.modelo,\n  simulado: r.simulado,\n  tipo_sigaa: r.classificacao.tipo_sigaa,\n  ha_certificado: r.ha_certificado,\n  ha_abatidas: r.calculo.ha_abatidas,\n  teto_ha: r.calculo.teto_ha,\n  regra_status: r.calculo.status,\n  regra_fonte: r.calculo.url_fonte ? `${r.calculo.norma}, ${r.calculo.artigo}` : null,\n  classificacao: r.classificacao,\n  calculo: r.calculo,\n  tokens: r.tokens,\n};\nreturn [{ json: { resposta: JSON.stringify(corpo), content_type: 'application/json; charset=utf-8', status: 200 } }];\n"
+        "jsCode": "// Resposta JSON da API de avaliação.\nconst r = $input.first().json;\nconst corpo = {\n  versao: r.versao,\n  modelo: r.modelo,\n  simulado: r.simulado,\n  tipo_sigaa: r.classificacao.tipo_sigaa,\n  codigo_sigaa: r.sigaa.codigo,\n  opcao_sigaa: r.sigaa.opcao,\n  sigaa: r.sigaa,\n  ha_certificado: r.ha_certificado,\n  ha_abatidas: r.calculo.ha_abatidas,\n  teto_ha: r.calculo.teto_ha,\n  regra_status: r.calculo.status,\n  regra_fonte: r.calculo.url_fonte ? `${r.calculo.norma}, ${r.calculo.artigo}` : null,\n  classificacao: r.classificacao,\n  calculo: r.calculo,\n  tokens: r.tokens,\n};\nreturn [{ json: { resposta: JSON.stringify(corpo), content_type: 'application/json; charset=utf-8', status: 200 } }];\n"
       }
     },
     {
-      "id": "hc-28",
+      "id": "hc-31",
       "name": "Formatar erro",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -765,7 +845,7 @@
       }
     },
     {
-      "id": "hc-29",
+      "id": "hc-32",
       "name": "Responder",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
@@ -875,7 +955,7 @@
       "main": [
         [
           {
-            "node": "Montar declaração",
+            "node": "Recortar assinatura",
             "type": "main",
             "index": 0
           }
@@ -883,6 +963,46 @@
         [
           {
             "node": "Datar declaração",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recortar assinatura": {
+      "main": [
+        [
+          {
+            "node": "Preparar assinatura",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar assinatura": {
+      "main": [
+        [
+          {
+            "node": "Assinatura ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assinatura ok?": {
+      "main": [
+        [
+          {
+            "node": "Montar declaração",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Formatar erro",
             "type": "main",
             "index": 0
           }

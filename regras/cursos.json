@@ -5,12 +5,19 @@
     "modelo_declaracao": "declaracao-eng-computacao.html",
     "marca_kit": "horas-complementares-ia/declaracao-base/v2",
     "area_concentracao": "computação: programação, desenvolvimento de software, banco de dados, ciência de dados e IA, redes, cibersegurança, cloud, sistemas digitais, arquitetura de computadores e eletrônica",
-    "matriz_padrao": "CL2023T",
+    "matriz_padrao": null,
     "matrizes": {
-      "CL2023T": {
-        "rotulo": "Matriz CL2023T",
-        "total_ac_ha": 570,
-        "fonte": "Lançamento real homologado: curso de 400 h na área aceito com 228 h/a = teto de 40% de 570 (o PPC v2 de 2019 previa 450 h/a para a matriz anterior)."
+      "ate-2022-2": {
+        "codigo_sigaa": "ECOM32",
+        "rotulo": "Ingresso até 2022.2",
+        "total_ac_ha": 450,
+        "fonte": "https://www.eng-computacao.leopoldina.cefetmg.br/aluno/atividades-complementares/"
+      },
+      "desde-2023-1": {
+        "codigo_sigaa": "ECL2023",
+        "rotulo": "Ingresso a partir de 2023.1",
+        "total_ac_ha": 135,
+        "fonte": "https://www.eng-computacao.leopoldina.cefetmg.br/wp-content/uploads/sites/178/2024/07/PPCEngComp-v20240719.pdf"
       }
     },
     "fontes": {
@@ -125,11 +132,13 @@
     "matriz_padrao": null,
     "matrizes": {
       "ate-2022-2": {
+        "codigo_sigaa": "7878 / ECA2021",
         "rotulo": "Ingresso até 2022.2",
         "total_ac_ha": 240,
         "fonte": "https://www.eng-controleautomacao.leopoldina.cefetmg.br/atividades-complementares/"
       },
       "desde-2023-1": {
+        "codigo_sigaa": "CAU2023",
         "rotulo": "Ingresso a partir de 2023.1",
         "total_ac_ha": 45,
         "fonte": "https://www.eng-controleautomacao.leopoldina.cefetmg.br/atividades-complementares/"

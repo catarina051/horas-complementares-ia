@@ -11,8 +11,8 @@ do certificado.
 
 ## Problema (Fato) e causa
 
-- **Fato:** cada aluno precisa somar as horas de Atividades Complementares da sua matriz (570 h/a em
-  Eng. de Computação; 240 ou 45 h/a em Controle e Automação, conforme o ingresso). Para cada certificado,
+- **Fato:** cada aluno precisa somar as horas de Atividades Complementares da sua matriz (450 ou 135 h/a em
+  Eng. de Computação; 240 ou 45 h/a em Controle e Automação, conforme o PPC atual). Para cada certificado,
   escolhe um entre 25 tipos parecidos no SIGAA ("Palestra" ou "Participação em congresso"? "Curso
   na área" ou "em área diferenciada"?), monta à mão o PDF com a declaração datada e não sabe quantas
   horas vão contar até a Coordenação responder. Tempo manual por certificado: _a medir_.
@@ -37,12 +37,12 @@ certificado ─► texto (OCR local se for imagem) ─► anonimiza ([ALUNO]) �
 API /webhook/classificar ─► mesma classificação, resposta em JSON (usada pela avaliação)
 ```
 
-- **n8n** orquestra tudo (29 nós). O código de cada Code node fica em [`n8n/codigo/`](n8n/codigo)
+- **n8n** orquestra tudo (32 nós). O código de cada Code node fica em [`n8n/codigo/`](n8n/codigo)
   e `node n8n/montar-workflow.mjs` gera o [workflow exportado](workflows/horas-complementares.json),
   sem credenciais.
 - **Gotenberg** (container pronto) converte HTML em PDF e junta PDFs: API sem backend próprio.
-- **Serviço `declaracao`** ([`services/declaracao`](services/declaracao)): ~150 linhas de Python
-  que carimbam a data na declaração e extraem o texto do certificado, com OCR local (Tesseract) quando
+- **Serviço `declaracao`** ([`services/declaracao`](services/declaracao)): Python
+  que reconhece e recorta a assinatura, carimba a data na declaração e extrai o texto do certificado, com OCR local (Tesseract) quando
   ele vem como imagem. Reaproveita o script de troca
   de data da skill `cefetmg-horas-complementares`.
 - **Gemini Flash (plano gratuito)** só escolhe a categoria, a variante e lê as quantidades. **As horas
@@ -51,8 +51,14 @@ API /webhook/classificar ─► mesma classificação, resposta em JSON (usada p
 - **Um modelo de declaração por curso,** cada um fiel ao PDF oficial da coordenação (Eng. de Computação
   com o logo do CEFET-MG; Controle e Automação com o brasão e o cabeçalho do Conselho de Graduação).
 - **Kit pessoal sem guardar nada:** no primeiro uso o aluno digita os dados e envia a foto da
-  assinatura (o fundo some com filtro CSS e `mix-blend-mode`, sem IA). Recebe também a
+  assinatura. Um detector de visão treinado (YOLOS Tiny, ONNX em CPU) localiza a assinatura em cada foto;
+  a limpeza local remove papel, sombras e margens e preserva os traços próximos. Não usa coordenadas
+  fixas nem uma cor de caneta específica. Imagens ambíguas pedem uma nova foto. Recebe também a
   declaração-base, que reutiliza depois: só a data muda.
+- **Código e opção do SIGAA:** [`regras/tipos-sigaa.json`](regras/tipos-sigaa.json) contém os rótulos
+  transcritos das capturas, separados por código e variante. A página e a API devolvem o código
+  e o texto completo. Categorias ausentes ou com rótulo cortado ficam a confirmar, sem opção inventada.
+  O ingresso é obrigatório nos dois cursos; quem migrou escolhe a versão da matriz atual.
 
 ## Prompts
 
@@ -71,7 +77,7 @@ categoria, das horas e do alerta de injeção, além de tokens e custo por vers�
 
 | Versão | Categoria correta | Horas corretas | Custo por certificado |
 |---|---|---|---|
-| v1 | 1/1 real (meta: 20) | 1/1 (228 h/a, igual ao SIGAA) | R$ 0 (plano gratuito, ~2.500 tokens) |
+| v1 (histórico) | 1/1 real (meta: 20) | Reavaliar com as matrizes atuais; total de 570 corrigido abaixo | R$ 0 (plano gratuito, ~2.500 tokens) |
 
 ## O que cortei, onde errei e a decisão difícil
 
@@ -81,9 +87,10 @@ categoria, das horas e do alerta de injeção, além de tokens e custo por vers�
 - **Onde errei e o que mudei:**
   - Comecei pela CGRAD 17/11, como a skill e a página do curso. Lendo as normas, achei a CGRAD 05/23,
     que revogou a 17/11 sem regra de transição e é a que o SIGAA usa hoje. A tabela foi refeita.
-  - Usei 450 h/a (PPC de 2019) como total. O primeiro certificado real desmentiu: 400 h de curso
-    na área viraram 228 h/a no SIGAA, exatamente o teto de 40% de **570**. A matriz que vale é a
-    CL2023T, e trocar um número na tabela recalculou todos os tetos.
+  - Um lançamento de 228 h/a levou à inferência incorreta de 570 h/a para toda Computação.
+    Na manutenção de 31/10/2026, o SIGAA público mostrou CL2023T inativa e ECL2023 ativa.
+    O PPC de 2024 separa 135 h/a de AC de 435 h/a de extensão. A ferramenta agora usa
+    ECOM32/450 h/a para o PPC antigo e ECL2023/135 h/a para o novo, com fontes em `regras/README.md`.
   - Cortei certificados em imagem pelo 80/20, e o primeiro certificado real era exatamente isso: o
     aluno cola a figura do certificado no modelo do curso. A ferramenta lia só o cabeçalho e dizia
     "não é certificado". Entrou OCR local antes da anonimização, e o caso passou a acertar.
@@ -113,6 +120,15 @@ para o n8n, importa, publica e só então sobe de novo.
 
 Formulário: <http://localhost:5679/form/horas-complementares>. Sem `GEMINI_API_KEY` o fluxo roda em
 modo demonstração (classificação por palavras-chave, avisada na página).
+
+Após esta atualização, abra <http://localhost:5679/form/horas-complementares?v=20261031> para evitar
+o formulário antigo em cache. Gere uma nova declaração-base no modo de primeiro uso se a anterior
+contém a foto inteira: o reuso preserva a assinatura já existente no PDF.
+
+O primeiro build baixa os pesos públicos de um detector treinado de assinaturas, com revisão fixa,
+e os converte para ONNX. As fotos não são enviadas ao provedor do modelo. Em runtime, só ONNX Runtime,
+NumPy e Pillow são necessários; PyTorch fica no estágio de construção. Detalhes em
+[`services/declaracao/MODELO.md`](services/declaracao/MODELO.md).
 
 Link público no piloto: `docker compose --profile tunnel up -d` e pegue a URL em
 `docker compose logs cloudflared`. Coloque essa URL em `WEBHOOK_URL` no `.env` e reinicie o n8n.

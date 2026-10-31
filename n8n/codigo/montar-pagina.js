@@ -6,6 +6,8 @@ if (!final) throw new Error(`Gotenberg não juntou os PDFs: ${$input.first().jso
 
 const c = r.classificacao;
 const calc = r.calculo;
+const sigaa = r.sigaa;
+const tipoCompleto = sigaa.opcao ?? c.tipo_sigaa;
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
 ));
@@ -22,6 +24,7 @@ const horas = calc.ha_abatidas !== null
   : `<p class="valor pendente">A confirmar</p><p class="conta">${esc(calc.motivo)} Confirme com a Coordenação.</p>`;
 
 const alertas = [];
+if (sigaa.status !== 'confirmado') alertas.push(esc(sigaa.motivo));
 if (r.simulado) alertas.push('<strong>Modo demonstração:</strong> sem chave do Gemini, a classificação foi feita por palavras-chave. Não use este resultado.');
 if (c.alerta_instrucao_suspeita) alertas.push('O certificado contém um texto que tenta instruir a IA. Ele foi ignorado, mas confira se o documento é legítimo.');
 if (c.confianca !== 'alta') alertas.push(`Confiança <strong>${esc(c.confianca)}</strong>: ${esc(c.justificativa)}${c.alternativas?.length ? ` Outras opções possíveis: ${c.alternativas.map(esc).join('; ')}.` : ''}`);
@@ -58,7 +61,7 @@ const html = `
   <p class="sub">${esc(c.atividade)} · ${esc(c.instituicao)}</p>
 
   <div class="destaque">
-    <div class="card"><p class="rotulo">Marque no SIGAA</p><p class="tipo">${esc(c.tipo_sigaa)}</p></div>
+    <div class="card"><p class="rotulo">${sigaa.opcao ? 'Marque no SIGAA' : 'Tipo a confirmar no SIGAA'}</p><p class="tipo">${esc(tipoCompleto)}</p><p class="conta">Código: <strong>${esc(sigaa.codigo)}</strong></p></div>
     <div class="card"><p class="rotulo">Horas que serão abatidas</p>${horas}</div>
   </div>
 
@@ -86,7 +89,7 @@ const html = `
   <p class="rotulo" style="margin-top:18px">Como lançar</p>
   <ol>
     <li>SIGAA → Portal do Discente → Ensino → Registro de Atividades Complementares (ou Autônomas) → Cadastrar Novo Registro.</li>
-    <li>Tipo: <strong>${esc(c.tipo_sigaa)}</strong>.</li>
+    <li>Tipo: <strong>${esc(tipoCompleto)}</strong> (código ${esc(sigaa.codigo)}).${sigaa.opcao ? '' : ' Confirme a opção com a Coordenação antes de lançar.'}</li>
     <li>Anexe o PDF baixado (declaração datada + certificado) e cole a descrição.</li>
   </ol>
 

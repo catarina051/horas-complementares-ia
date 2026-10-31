@@ -34,6 +34,7 @@ from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
 from atualizar_data_declaracao import interpretar_data, substituir_data
+from assinatura import recortar_assinatura as _recortar_assinatura, ErroAssinatura
 
 # Marca gravada pelo Gotenberg nos metadados da declaração-base (campo Subject).
 KIT_MARCA = 'horas-complementares-ia/declaracao-base/v2'
@@ -53,6 +54,13 @@ OCR_LIMITE_TEXTO = 300
 
 class ErroDeclaracao(Exception):
     """Problema no PDF enviado, com mensagem pronta para mostrar ao aluno."""
+
+
+def recortar_assinatura(dados: bytes) -> dict:
+    try:
+        return _recortar_assinatura(dados)
+    except ErroAssinatura as e:
+        raise ErroDeclaracao(str(e)) from None
 
 
 def _texto(reader: PdfReader) -> str:
@@ -194,16 +202,18 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         url = urlparse(self.path)
-        if url.path not in ('/redatar', '/texto'):
+        if url.path not in ('/redatar', '/texto', '/assinatura'):
             self._json(404, {'erro': 'rota inexistente'})
             return
         tamanho = int(self.headers.get('Content-Length') or 0)
         if not 0 < tamanho <= TAMANHO_MAXIMO:
-            self._json(413, {'erro': 'Envie um PDF de até 10 MB.'})
+            self._json(413, {'erro': 'Envie um arquivo de até 10 MB.'})
             return
         corpo = self.rfile.read(tamanho)
         try:
-            if url.path == '/texto':
+            if url.path == '/assinatura':
+                self._json(200, recortar_assinatura(corpo))
+            elif url.path == '/texto':
                 self._json(200, extrair_texto(corpo))
             else:
                 self._json(200, processar(corpo, parse_qs(url.query).get('data', [None])[0]))

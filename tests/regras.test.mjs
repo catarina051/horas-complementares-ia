@@ -46,7 +46,7 @@ test('cada curso tem modelo de declaração, marca de kit e pelo menos uma matri
   }
 });
 
-async function calcular(tipo_sigaa, variante, quantidades, curso = 'eng-computacao', matriz = 'CL2023T') {
+async function calcular(tipo_sigaa, variante, quantidades, curso = 'eng-computacao', matriz = 'desde-2023-1') {
   const classificacao = {
     e_comprovante: true, tipo_sigaa, variante,
     quantidades: { horas: null, dias: null, meses: null, semestres: null, anos: null, quantidade: null, ...quantidades },
@@ -61,19 +61,19 @@ async function calcular(tipo_sigaa, variante, quantidades, curso = 'eng-computac
 test('curso na área: horas × 1,2', async () => {
   const c = await calcular('Curso extracurricular na área de concentração do curso', 'padrao', { horas: 20 });
   assert.equal(c.ha_abatidas, 24);
-  assert.equal(c.teto_ha, 228);
+  assert.equal(c.teto_ha, 54);
 });
 
-test('caso real homologado: curso de 400 h na área virou 228 h/a no SIGAA (teto de 40% de 570)', async () => {
+test('Computação nova: curso de 400 h tem teto de 40% das 135 h/a do PPC ativo', async () => {
   const c = await calcular('Curso extracurricular na área de concentração do curso', 'padrao', { horas: 400 });
   assert.equal(c.ha_calculadas, 480);
-  assert.equal(c.ha_abatidas, 228);
+  assert.equal(c.ha_abatidas, 54);
 });
 
 test('teto da categoria limita o certificado', async () => {
   const c = await calcular('Curso extracurricular em área diferenciada da área de concentração do curso', 'padrao', { horas: 200 });
   assert.equal(c.ha_calculadas, 120);
-  assert.equal(c.ha_abatidas, 114);
+  assert.equal(c.ha_abatidas, 27);
   assert.equal(c.limitado_pelo_teto, true);
 });
 
@@ -91,8 +91,8 @@ test('valores fixos e por semestre', async () => {
 });
 
 test('PET tem teto maior com certificado final', async () => {
-  assert.equal((await calcular('Programa de Educação Tutorial', 'certificado_final', { semestres: 4 })).ha_abatidas, 456);
-  assert.equal((await calcular('Programa de Educação Tutorial', 'padrao', { semestres: 4 })).ha_abatidas, 285);
+  assert.equal((await calcular('Programa de Educação Tutorial', 'certificado_final', { semestres: 4 })).ha_abatidas, 108);
+  assert.equal((await calcular('Programa de Educação Tutorial', 'padrao', { semestres: 4 })).ha_abatidas, 67.5);
 });
 
 test('prática profissional: 60 h valem 15 h/a', async () => {
@@ -101,7 +101,8 @@ test('prática profissional: 60 h valem 15 h/a', async () => {
 
 test('Eng. de Computação: extensão segue o colegiado (120 h/a por semestre)', async () => {
   const c = await calcular('Atividade de Extensão', 'padrao', { semestres: 2 });
-  assert.equal(c.ha_abatidas, 240);
+  assert.equal(c.ha_calculadas, 240);
+  assert.equal(c.ha_abatidas, 67.5);
   assert.match(c.norma, /CCECOMLP 06\/22/);
 });
 

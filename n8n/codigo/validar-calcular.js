@@ -4,6 +4,7 @@
 const fs = require('fs');
 const regrasBase = JSON.parse(fs.readFileSync('/data/regras/base-cgrad-05-23.json', 'utf8'));
 const cursos = JSON.parse(fs.readFileSync('/data/regras/cursos.json', 'utf8'));
+const tiposSigaa = JSON.parse(fs.readFileSync('/data/regras/tipos-sigaa.json', 'utf8'));
 const base = $('Montar requisição').first().json;
 const r = $input.first().json;
 
@@ -99,6 +100,22 @@ if (!c.e_comprovante) {
 
 const horas = Number(c.quantidades?.horas);
 const uso = r.body.usageMetadata ?? {};
+// Identificadores e rótulos vêm das capturas do SIGAA, nunca do modelo.
+const codigoSigaa = cursos[base.curso].matrizes[base.matriz].codigo_sigaa;
+let varianteSigaa = c.variante;
+if (codigoSigaa === '7878 / ECA2021' && c.tipo_sigaa === 'Participação em Programas de Intercâmbio cultural/estudantil') {
+  const meses = Number(c.quantidades?.meses) || Number(c.quantidades?.anos) * 12;
+  varianteSigaa = meses >= 12 ? 'um_ano_ou_mais' : meses === 6 ? 'seis_meses' : null;
+}
+const opcoes = (tiposSigaa.matrizes[codigoSigaa] ?? []).filter((o) => (
+  o.categoria === c.tipo_sigaa && (o.variante === varianteSigaa || o.variante === '*')
+));
+const sigaa = {
+  codigo: codigoSigaa,
+  opcao: opcoes.length === 1 ? opcoes[0].opcao : null,
+  status: opcoes.length === 1 ? 'confirmado' : 'a_confirmar',
+  motivo: opcoes.length === 1 ? null : 'Não há uma opção confirmada nas capturas para esta categoria e variante. Confira o tipo com a Coordenação antes de lançar.',
+};
 return [{
   json: {
     origem: base.origem,
@@ -110,6 +127,7 @@ return [{
     simulado: Boolean(r.simulado),
     linha_data: base.linha_data,
     classificacao: c,
+    sigaa,
     calculo: calcular(regrasBase, cursos[base.curso], base.matriz, c),
     ha_certificado: horas > 0 ? arred(horas * 1.2) : null,
     tokens: { entrada: uso.promptTokenCount ?? 0, saida: uso.candidatesTokenCount ?? 0 },

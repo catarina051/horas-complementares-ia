@@ -33,19 +33,13 @@
   /* Linha de Local e Data: a data é carimbada logo acima dela (linha de base a 188,5 mm). */
   .linha-data { position: absolute; top: 190mm; left: 64mm; width: 82mm; border-top: 0.3mm solid #000; }
   .rotulo-data { top: 195.5mm; }
-  /*
-    Remoção do fundo sem IA: o filtro deixa o papel branco puro e o traço escuro,
-    e o multiply faz o branco sumir sobre a página. Funciona com foto de celular
-    com sombra leve; sombra forte pode deixar mancha.
-  */
+  /* O serviço local já recortou a tinta e removeu o fundo antes deste HTML. */
   .assinatura {
     position: absolute; top: 201mm; left: 64mm; width: 84mm; height: 18mm;
     display: flex; align-items: flex-end; justify-content: center;
   }
   .assinatura img {
     max-width: 100%; max-height: 100%;
-    filter: grayscale(1) brightness(1.35) contrast(3.2);
-    mix-blend-mode: multiply;
   }
   .linha-assinatura { position: absolute; top: 219.5mm; left: 63.9mm; width: 84mm; border-top: 0.3mm solid #000; }
   .rotulo-assinatura { top: 224.2mm; }

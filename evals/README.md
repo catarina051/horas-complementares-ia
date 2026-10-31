@@ -12,7 +12,7 @@ para Y% na v2".
    - `arquivo`: caminho relativo a esta pasta, ex. `certificados/curso-python.pdf`
    - `tipo_esperado`: o tipo homologado no SIGAA, exatamente como em `regras/base-cgrad-05-23.json` ou `regras/cursos.json`
    - `nome`, `matricula`: usados só para anonimizar o texto antes do modelo
-   - `curso`, `matriz`: `eng-computacao` + `CL2023T`, ou `eng-controle-automacao` + `ate-2022-2` /
+   - `curso`, `matriz`: `eng-computacao` ou `eng-controle-automacao`, com `ate-2022-2` /
      `desde-2023-1` (veja `regras/cursos.json`)
    - `ha_homologadas` (opcional): h/a que a Coordenação validou
    - `alerta_esperado` (opcional): `sim` se o certificado tem instrução escondida
