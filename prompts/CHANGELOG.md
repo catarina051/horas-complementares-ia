@@ -21,4 +21,7 @@ Modelo: `gemini-3.5-flash-lite`, temperatura 0. Nas 4 amostras fictícias de `sa
 categoria, horas e alerta de injeção (4/4), com cerca de 2.200 tokens de entrada por certificado.
 Isso só valida o fluxo, não é a métrica do caso.
 
-Acerto: a medir com os 20 certificados homologados.
+Primeiro certificado real homologado (curso de 400 h do IFCE, enviado como imagem e lido por OCR):
+categoria e horas corretas (228 h/a, igual ao SIGAA), com confiança alta.
+
+Acerto: 1/1 real até agora; a meta é medir com 20 certificados homologados.

@@ -1,5 +1,6 @@
 import base64
 import json
+import shutil
 import sys
 import threading
 import urllib.error
@@ -131,6 +132,40 @@ def test_http_redatar_e_health(servidor):
     assert status == 200 and corpo['metodo'] == 'carimbo_kit'
     status, corpo = _post(servidor + '/redatar', kit_pdf(marcado=False))
     assert status == 422 and 'declaração-base' in corpo['erro']
+
+
+def certificado_como_imagem() -> bytes:
+    """Certificado sem texto selecionável: a página é só uma figura, como quando o aluno cola o
+    certificado no modelo do curso. Mantém um cabeçalho de texto curto, como o do CEFET."""
+    import pymupdf
+    buf = BytesIO()
+    c = canvas.Canvas(buf)
+    c.setFont('Helvetica-Bold', 28)
+    c.drawString(60, 700, 'CERTIFICADO')
+    c.setFont('Helvetica', 16)
+    c.drawString(60, 650, 'Certificamos que Fulana de Tal Exemplo concluiu o curso')
+    c.drawString(60, 625, 'Novos Negocios em TIC com carga horaria de 400 horas.')
+    c.save()
+    figura = pymupdf.open(stream=buf.getvalue(), filetype='pdf')[0].get_pixmap(dpi=150).tobytes('png')
+    doc = pymupdf.open()
+    pagina = doc.new_page()
+    pagina.insert_text((60, 40), 'CENTRO FEDERAL DE EDUCACAO TECNOLOGICA DE MINAS GERAIS', fontsize=9)
+    pagina.insert_image(pymupdf.Rect(30, 60, 565, 800), stream=figura)
+    return doc.tobytes()
+
+
+@pytest.mark.skipif(not shutil.which('tesseract'), reason='Tesseract não instalado (roda no container)')
+def test_ocr_le_certificado_colado_como_imagem():
+    r = app.extrair_texto(certificado_como_imagem())
+    assert r['paginas_ocr'] == [1]
+    texto = ' '.join(r['texto'].split())
+    assert 'CERTIFICADO' in texto
+    assert '400 horas' in texto
+    assert 'CENTRO FEDERAL' in texto  # o texto selecionável continua
+
+
+def test_pdf_com_texto_nao_passa_por_ocr():
+    assert app.extrair_texto(kit_pdf())['paginas_ocr'] == []
 
 
 def test_http_texto(servidor):

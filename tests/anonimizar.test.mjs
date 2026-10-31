@@ -49,7 +49,7 @@ test('texto sem dados pessoais fica igual', async () => {
   assert.equal(texto_anonimizado, texto);
 });
 
-test('certificado escaneado (sem texto) vira erro claro', async () => {
+test('certificado ilegível (nem o OCR leu) vira erro claro', async () => {
   const saida = await anonimizar('   \n  ');
-  assert.match(saida.erro, /escaneada/);
+  assert.match(saida.erro, /nem como imagem/);
 });

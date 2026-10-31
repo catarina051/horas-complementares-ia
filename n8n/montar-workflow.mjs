@@ -38,7 +38,7 @@ const continuar = { onError: 'continueRegularOutput' };
 function postPdf(name, position, url, campo) {
   no(name, 'n8n-nodes-base.httpRequest', 4.2, position, {
     method: 'POST', url, sendBody: true, contentType: 'binaryData', inputDataFieldName: campo,
-    options: { ...respostaJson, timeout: 30000 },
+    options: { ...respostaJson, timeout: 60000 },
   }, continuar);
 }
 

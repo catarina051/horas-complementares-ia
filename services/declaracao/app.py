@@ -13,7 +13,7 @@ anonimizar o certificado antes de chamar o modelo. Nada é gravado em disco nem
 registrado em log.
 
 POST /redatar[?data=AAAA-MM-DD]  corpo: application/pdf  ->  JSON
-POST /texto                      corpo: application/pdf  ->  {texto, paginas}
+POST /texto                      corpo: application/pdf  ->  {texto, paginas, paginas_ocr}
 GET  /health
 """
 from __future__ import annotations
@@ -21,10 +21,12 @@ from __future__ import annotations
 import base64
 import json
 import re
+import subprocess
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
 from urllib.parse import parse_qs, urlparse
 
+import pymupdf  # renderiza a página para o OCR
 from pypdf import PdfReader, PdfWriter
 from pypdf.errors import PdfReadError
 from pypdf.generic import DecodedStreamObject
@@ -39,6 +41,8 @@ KIT_MARCA = 'horas-complementares-ia/declaracao-base/v1'
 KIT_DATA_TOPO_MM = 175
 KIT_CIDADE = 'Leopoldina'
 TAMANHO_MAXIMO = 10 * 1024 * 1024
+# Abaixo disso, uma página com imagem é tratada como imagem (só cabeçalho/rodapé selecionáveis).
+OCR_LIMITE_TEXTO = 300
 
 
 class ErroDeclaracao(Exception):
@@ -132,15 +136,37 @@ def processar(pdf: bytes, data: str | None = None) -> dict:
     }
 
 
+def ocr(imagem_png: bytes) -> str:
+    """Tesseract em português, local: a imagem nunca sai do container."""
+    r = subprocess.run(
+        ['tesseract', 'stdin', 'stdout', '-l', 'por', '--psm', '3'],
+        input=imagem_png, capture_output=True, timeout=60,
+    )
+    return r.stdout.decode('utf-8', 'replace') if r.returncode == 0 else ''
+
+
 def extrair_texto(pdf: bytes, max_paginas: int = 10) -> dict:
-    """Texto do certificado para o classificador. Vazio indica PDF escaneado (imagem)."""
+    """Texto do certificado para o classificador.
+
+    Página com imagem e quase nenhum texto selecionável (certificado colado como figura
+    no modelo do curso, ou digitalizado) passa por OCR. O texto selecionável é mantido.
+    """
     try:
-        reader = PdfReader(BytesIO(pdf))
-        paginas = reader.pages[:max_paginas]
-        texto = '\n'.join(p.extract_text() or '' for p in paginas)
-    except PdfReadError:
+        doc = pymupdf.open(stream=pdf, filetype='pdf')
+    except (pymupdf.FileDataError, RuntimeError):
         raise ErroDeclaracao('O certificado não é um PDF válido.') from None
-    return {'texto': texto.strip(), 'paginas': len(reader.pages)}
+    partes, paginas_ocr = [], []
+    for i, pagina in enumerate(doc):
+        if i >= max_paginas:
+            break
+        texto = pagina.get_text().strip()
+        if pagina.get_images() and len(texto) < OCR_LIMITE_TEXTO:
+            lido = ocr(pagina.get_pixmap(dpi=300, colorspace=pymupdf.csGRAY).tobytes('png')).strip()
+            if lido:
+                texto = f'{texto}\n{lido}'.strip()
+                paginas_ocr.append(i + 1)
+        partes.append(texto)
+    return {'texto': '\n'.join(partes).strip(), 'paginas': doc.page_count, 'paginas_ocr': paginas_ocr}
 
 
 class Handler(BaseHTTPRequestHandler):

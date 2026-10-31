@@ -55,6 +55,6 @@ if (resposta.statusCode !== 200) {
 }
 const texto = resposta.body.texto ?? '';
 if (texto.replace(/\s/g, '').length < 40) {
-  return [{ json: { ...prep, erro: 'Este certificado parece ser uma imagem escaneada, sem texto selecionável. Por enquanto a ferramenta só lê PDFs com texto (os emitidos por sistemas, não fotos ou digitalizações).' } }];
+  return [{ json: { ...prep, erro: 'Não consegui ler o certificado, nem como imagem. Envie um PDF mais nítido: de preferência o arquivo original do emissor, ou uma digitalização reta e bem iluminada.' } }];
 }
 return [{ json: { ...prep, texto_anonimizado: anonimizar(texto, prep.dados_anonimizar), dados_anonimizar: undefined } }];
