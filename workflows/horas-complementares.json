@@ -1,0 +1,1139 @@
+{
+  "id": "hcIaHorasCompl01",
+  "name": "Horas Complementares IA",
+  "nodes": [
+    {
+      "id": "hc-01",
+      "name": "Formulário",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "path": "horas-complementares",
+        "formTitle": "Horas Complementares: certificado pronto para o SIGAA",
+        "formDescription": "Para Eng. de Computação do CEFET-MG Leopoldina, ingresso 2022.1 (450 h/a). Envie o certificado e receba a categoria do SIGAA, as horas que serão abatidas e o PDF pronto (declaração assinada + certificado). A validação final é da Coordenação.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Certificado (PDF)",
+              "fieldType": "file",
+              "acceptFileTypes": ".pdf",
+              "multipleFiles": false,
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Declaração de autenticidade",
+              "fieldType": "radio",
+              "requiredField": true,
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Primeira vez: vou preencher meus dados e enviar a foto da assinatura"
+                  },
+                  {
+                    "option": "Já tenho minha declaração-base (gerada aqui antes)"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldType": "html",
+              "html": "<p><strong>Primeira vez:</strong> preencha os dados e envie uma foto da sua assinatura em papel branco. A ferramenta monta a declaração e devolve uma declaração-base para você reutilizar.</p>"
+            },
+            {
+              "fieldLabel": "Nome completo",
+              "fieldType": "text",
+              "placeholder": "Como está no SIGAA"
+            },
+            {
+              "fieldLabel": "Matrícula",
+              "fieldType": "text",
+              "placeholder": "Só números"
+            },
+            {
+              "fieldLabel": "RG",
+              "fieldType": "text"
+            },
+            {
+              "fieldLabel": "CPF",
+              "fieldType": "text",
+              "placeholder": "000.000.000-00"
+            },
+            {
+              "fieldLabel": "Foto da assinatura (JPG ou PNG)",
+              "fieldType": "file",
+              "acceptFileTypes": ".jpg,.jpeg,.png",
+              "multipleFiles": false
+            },
+            {
+              "fieldType": "html",
+              "html": "<p><strong>Já tenho a declaração-base:</strong> envie o PDF que a ferramenta gerou no seu primeiro uso. Só a data muda.</p>"
+            },
+            {
+              "fieldLabel": "Declaração-base (PDF)",
+              "fieldType": "file",
+              "acceptFileTypes": ".pdf",
+              "multipleFiles": false
+            },
+            {
+              "fieldLabel": "Privacidade",
+              "fieldType": "checkbox",
+              "requiredField": true,
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Entendo que meus dados servem só para gerar a declaração e não ficam guardados, e que o texto do certificado vai para a IA sem nome, matrícula, RG e CPF."
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "responseMode": "responseNode",
+        "options": {
+          "appendAttribution": false,
+          "buttonLabel": "Gerar meu PDF"
+        }
+      },
+      "webhookId": "6f1c2a90-5b1e-4c39-9a52-0d0c00000001"
+    },
+    {
+      "id": "hc-02",
+      "name": "API classificar",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        320
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "classificar",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "6f1c2a90-5b1e-4c39-9a52-0d0c00000002"
+    },
+    {
+      "id": "hc-03",
+      "name": "Normalizar formulário",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Entrada do formulário → campos padronizados e validação do que cada modo exige.\n// O Form Trigger 2.1 identifica cada campo pelo rótulo, e o arquivo pelo rótulo com \\W → _.\n// Estes rótulos precisam ser iguais aos de n8n/montar-workflow.mjs (um teste confere).\nconst ROTULOS = {\n  certificado: 'Certificado (PDF)',\n  modo: 'Declaração de autenticidade',\n  nome: 'Nome completo',\n  matricula: 'Matrícula',\n  rg: 'RG',\n  cpf: 'CPF',\n  assinatura: 'Foto da assinatura (JPG ou PNG)',\n  declaracao_base: 'Declaração-base (PDF)',\n};\nconst item = $input.first();\nconst texto = (chave) => (typeof item.json[ROTULOS[chave]] === 'string' ? item.json[ROTULOS[chave]].trim() : '');\nconst recebidos = item.binary ?? {};\nconst arquivos = Object.fromEntries(['certificado', 'assinatura', 'declaracao_base']\n  .map((chave) => [chave, recebidos[ROTULOS[chave].replace(/\\W/g, '_')]])\n  .filter(([, arquivo]) => arquivo));\n\nconst modo = texto('modo').startsWith('Primeira') ? 'primeiro_uso' : 'reuso';\nconst saida = {\n  origem: 'formulario',\n  modo,\n  versao: 'v1',\n  nome: texto('nome').replace(/\\s+/g, ' '),\n  matricula: texto('matricula'),\n  rg: texto('rg'),\n  cpf: texto('cpf'),\n  erro: '',\n};\n\nconst faltando = [];\nif (!arquivos.certificado) faltando.push('o certificado');\nif (modo === 'primeiro_uso') {\n  if (!saida.nome) faltando.push('o nome completo');\n  if (!saida.matricula) faltando.push('a matrícula');\n  if (!saida.rg) faltando.push('o RG');\n  if (!saida.cpf) faltando.push('o CPF');\n  if (!arquivos.assinatura) faltando.push('a foto da assinatura');\n} else if (!arquivos.declaracao_base) {\n  faltando.push('a sua declaração-base (PDF que a ferramenta gerou no primeiro uso)');\n}\n\nconst problemas = [];\nif (faltando.length) problemas.push(`Faltou enviar ${faltando.join(', ')}.`);\nif (arquivos.certificado && arquivos.certificado.mimeType !== 'application/pdf') {\n  problemas.push('O certificado precisa estar em PDF.');\n}\nif (modo === 'reuso' && arquivos.declaracao_base && arquivos.declaracao_base.mimeType !== 'application/pdf') {\n  problemas.push('A declaração-base precisa estar em PDF.');\n}\nif (modo === 'primeiro_uso') {\n  if (arquivos.assinatura && !/^image\\/(png|jpe?g)$/.test(arquivos.assinatura.mimeType)) {\n    problemas.push('A assinatura precisa ser uma foto em JPG ou PNG.');\n  }\n  if (saida.matricula && !/^\\d{6,15}$/.test(saida.matricula)) problemas.push('A matrícula deve ter só números.');\n  if (saida.cpf && saida.cpf.replace(/\\D/g, '').length !== 11) problemas.push('O CPF deve ter 11 dígitos.');\n}\nsaida.erro = problemas.join(' ');\n\n// Só segue o que o modo usa: no reuso a assinatura e os dados digitados são descartados.\nconst binary = { certificado: arquivos.certificado };\nif (modo === 'primeiro_uso') binary.assinatura = arquivos.assinatura;\nelse binary.declaracao_base = arquivos.declaracao_base;\nreturn [{ json: saida, binary }];\n"
+      }
+    },
+    {
+      "id": "hc-04",
+      "name": "Normalizar API",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        320
+      ],
+      "parameters": {
+        "jsCode": "// Entrada da API de avaliação (POST multipart: certificado, versao, nome, matricula).\n// Só classifica: não gera declaração nem PDF final.\nconst item = $input.first();\nconst corpo = item.json.body ?? {};\nconst certificado = item.binary?.certificado;\n\nconst versao = String(corpo.versao ?? 'v1').trim();\nlet erro = '';\nif (!certificado) erro = 'Envie o PDF no campo \"certificado\".';\nelse if (certificado.mimeType !== 'application/pdf') erro = 'O certificado precisa estar em PDF.';\nelse if (!/^v\\d+$/.test(versao)) erro = 'O campo \"versao\" deve ter o formato v1, v2...';\n\nreturn [{\n  json: {\n    origem: 'api',\n    modo: 'api',\n    versao,\n    nome: String(corpo.nome ?? '').trim(),\n    matricula: String(corpo.matricula ?? '').trim(),\n    rg: '',\n    cpf: '',\n    erro,\n  },\n  binary: certificado ? { certificado } : {},\n}];\n"
+      }
+    },
+    {
+      "id": "hc-05",
+      "name": "Entrada ok?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        160
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Entrada ok?-cond",
+              "leftValue": "={{ $json.erro }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "hc-06",
+      "name": "Precisa de declaração?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        100
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Precisa de declaração?-cond",
+              "leftValue": "={{ $json.origem }}",
+              "rightValue": "formulario",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "hc-07",
+      "name": "Primeiro uso?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Primeiro uso?-cond",
+              "leftValue": "={{ $json.modo }}",
+              "rightValue": "primeiro_uso",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "hc-08",
+      "name": "Montar declaração",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        -120
+      ],
+      "parameters": {
+        "jsCode": "// 1º uso: preenche o Anexo I com os dados e a assinatura (data URI) para o Gotenberg converter.\nconst fs = require('fs');\nconst item = $input.first();\n\nconst escapar = (s) => String(s).replace(/[&<>\"']/g, (c) => (\n  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]\n));\n\nconst assinatura = item.binary.assinatura;\nconst bytes = await this.helpers.getBinaryDataBuffer(0, 'assinatura');\nlet html = fs.readFileSync('/data/templates/declaracao.html', 'utf8');\nfor (const campo of ['nome', 'matricula', 'rg', 'cpf']) {\n  html = html.replaceAll(`{{${campo}}}`, escapar(item.json[campo]));\n}\nhtml = html.replace('{{assinatura}}', `data:${assinatura.mimeType};base64,${bytes.toString('base64')}`);\n\nconst pagina = await this.helpers.prepareBinaryData(Buffer.from(html, 'utf8'), 'index.html', 'text/html');\nreturn [{ json: item.json, binary: { ...item.binary, html: pagina } }];\n"
+      }
+    },
+    {
+      "id": "hc-09",
+      "name": "Gotenberg: HTML para PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        -120
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://gotenberg:3000/forms/chromium/convert/html",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "files",
+              "inputDataFieldName": "html"
+            },
+            {
+              "name": "preferCssPageSize",
+              "value": "true"
+            },
+            {
+              "name": "printBackground",
+              "value": "true"
+            },
+            {
+              "name": "metadata",
+              "value": "{\"Subject\":\"horas-complementares-ia/declaracao-base/v1\"}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "declaracao_base"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "hc-10",
+      "name": "Guardar base",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        -120
+      ],
+      "parameters": {
+        "jsCode": "// Guarda a declaração-base (sem data) gerada pelo Gotenberg: ela vai para o carimbo de data\n// e também volta para o aluno baixar e reutilizar.\nconst item = $input.first();\nconst pdf = item.binary?.declaracao_base;\nif (!pdf) {\n  throw new Error(`Gotenberg não gerou a declaração: ${item.json.error?.message ?? 'sem resposta'}`);\n}\nconst bytes = await this.helpers.getBinaryDataBuffer(0, 'declaracao_base');\nconst dados = $('Normalizar formulário').first().json;\nreturn [{\n  json: { ...dados, declaracao_base_b64: bytes.toString('base64') },\n  binary: { declaracao_base: { ...pdf, fileName: 'minha-declaracao-base.pdf' } },\n}];\n"
+      }
+    },
+    {
+      "id": "hc-11",
+      "name": "Datar declaração",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://declaracao:8000/redatar",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "declaracao_base",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "hc-12",
+      "name": "Preparar certificado",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        160
+      ],
+      "parameters": {
+        "jsCode": "// Junta o que a classificação precisa: o certificado, os dados para anonimizar e,\n// no formulário, a declaração já datada pelo serviço `declaracao`.\nconst doFormulario = $('Normalizar formulário').isExecuted;\nconst normal = doFormulario ? $('Normalizar formulário').first() : $('Normalizar API').first();\nconst n = normal.json;\n\nconst saida = {\n  origem: n.origem,\n  modo: n.modo,\n  versao: n.versao,\n  dados_anonimizar: { nome: n.nome, matricula: n.matricula, rg: n.rg, cpf: n.cpf },\n  declaracao_datada_b64: null,\n  linha_data: null,\n  erro: '',\n};\n\nif (doFormulario) {\n  const r = $input.first().json; // resposta de /redatar (fullResponse)\n  if (r.statusCode !== 200) {\n    saida.erro = r.body?.erro ?? 'Não consegui colocar a data de hoje na declaração. Tente de novo.';\n  } else {\n    saida.declaracao_datada_b64 = r.body.pdf_base64;\n    saida.linha_data = r.body.linha_data;\n    if (n.modo === 'reuso') {\n      // No reuso os dados vêm da própria declaração-base.\n      saida.dados_anonimizar = { nome: r.body.nome, matricula: r.body.matricula, rg: r.body.rg, cpf: r.body.cpf };\n    }\n  }\n}\n\nreturn [{ json: saida, binary: { certificado: normal.binary.certificado } }];\n"
+      }
+    },
+    {
+      "id": "hc-13",
+      "name": "Declaração ok?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2200,
+        160
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Declaração ok?-cond",
+              "leftValue": "={{ $json.erro }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "hc-14",
+      "name": "Extrair texto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2420,
+        160
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://declaracao:8000/texto",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "certificado",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "hc-15",
+      "name": "Anonimizar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        160
+      ],
+      "parameters": {
+        "jsCode": "// Troca nome, matrícula, RG, CPF e e-mails por [ALUNO] antes de o texto sair do Docker.\n// O plano gratuito do Gemini pode usar o conteúdo enviado para treinar modelos.\nconst prep = $('Preparar certificado').first().json;\nconst resposta = $input.first().json; // resposta de /texto (fullResponse)\n\nconst MARCA = '[ALUNO]';\nconst PARTICULAS = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);\nconst VARIANTES = {\n  a: 'aáàâãä', e: 'eéèêë', i: 'iíìîï', o: 'oóòôõö', u: 'uúùûü', c: 'cç', n: 'nñ',\n};\n\nconst semAcento = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();\nconst escaparRegex = (s) => s.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\n\n// \"José\" casa com \"JOSE\", \"jose\", \"José\"...\nfunction padraoPalavra(palavra) {\n  return [...semAcento(palavra)].map((ch) => (VARIANTES[ch] ? `[${VARIANTES[ch]}]` : escaparRegex(ch))).join('');\n}\n\n// \"123.456\" casa com \"123456\", \"123 456\", \"123-456\"...\nfunction padraoDigitos(valor) {\n  const digitos = String(valor ?? '').replace(/\\D/g, '');\n  return digitos.length >= 5 ? digitos.split('').join('[\\\\s.\\\\-/]?') : null;\n}\n\nfunction anonimizar(texto, dados) {\n  let t = texto;\n  const trocar = (padrao) => {\n    t = t.replace(new RegExp(padrao, 'giu'), MARCA);\n  };\n\n  const palavras = String(dados.nome ?? '').trim().split(/\\s+/).filter(Boolean);\n  if (palavras.length) {\n    trocar(`(?<![\\\\p{L}])${palavras.map(padraoPalavra).join('\\\\s+')}(?![\\\\p{L}])`);\n    // Partes soltas do nome (ex.: só o sobrenome), menos partículas e palavras curtas.\n    for (const p of palavras) {\n      if (p.length >= 4 && !PARTICULAS.has(semAcento(p))) trocar(`(?<![\\\\p{L}])${padraoPalavra(p)}(?![\\\\p{L}])`);\n    }\n  }\n  for (const valor of [dados.matricula, dados.rg, dados.cpf]) {\n    const padrao = padraoDigitos(valor);\n    if (padrao) trocar(padrao);\n  }\n  if (dados.rg) trocar(escaparRegex(String(dados.rg)));\n  // Padrões genéricos, para o que não veio nos dados (CPF de outra pessoa, matrícula etc.).\n  trocar('\\\\b\\\\d{3}\\\\.?\\\\d{3}\\\\.?\\\\d{3}-?\\\\d{2}\\\\b');\n  trocar('\\\\b\\\\d{9,}\\\\b');\n  trocar('[\\\\w.+-]+@[\\\\w-]+\\\\.[\\\\w.]+');\n  return t.replace(/(\\[ALUNO\\][\\s,]*){2,}/g, `${MARCA} `);\n}\n\nif (resposta.statusCode !== 200) {\n  return [{ json: { ...prep, erro: resposta.body?.erro ?? 'Não consegui ler o certificado.' } }];\n}\nconst texto = resposta.body.texto ?? '';\nif (texto.replace(/\\s/g, '').length < 40) {\n  return [{ json: { ...prep, erro: 'Este certificado parece ser uma imagem escaneada, sem texto selecionável. Por enquanto a ferramenta só lê PDFs com texto (os emitidos por sistemas, não fotos ou digitalizações).' } }];\n}\nreturn [{ json: { ...prep, texto_anonimizado: anonimizar(texto, prep.dados_anonimizar), dados_anonimizar: undefined } }];\n"
+      }
+    },
+    {
+      "id": "hc-16",
+      "name": "Texto ok?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2860,
+        160
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Texto ok?-cond",
+              "leftValue": "={{ $json.erro }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "hc-17",
+      "name": "Montar requisição",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3080,
+        160
+      ],
+      "parameters": {
+        "jsCode": "// Monta a chamada ao Gemini lendo o prompt e o schema versionados em prompts/.\nconst fs = require('fs');\nconst j = $input.first().json;\n\nif (!/^v\\d+$/.test(j.versao)) throw new Error(`Versão de prompt inválida: ${j.versao}`);\nconst arquivo = `/data/prompts/classificacao/${j.versao}.md`;\nif (!fs.existsSync(arquivo)) throw new Error(`Prompt ${j.versao} não existe em prompts/classificacao/`);\n\nconst prompt = fs.readFileSync(arquivo, 'utf8');\nconst schema = JSON.parse(fs.readFileSync('/data/prompts/classificacao/schema.json', 'utf8'));\n// O certificado não pode fechar a tag e \"sair\" da área de dados.\nconst certificado = j.texto_anonimizado.replace(/<\\/?\\s*certificado\\s*>/gi, '');\n\nreturn [{\n  json: {\n    ...j,\n    modelo: $env.GEMINI_MODEL || 'gemini-flash-latest',\n    simular: !$env.GEMINI_API_KEY,\n    requisicao: {\n      systemInstruction: { parts: [{ text: prompt }] },\n      contents: [{ role: 'user', parts: [{ text: `<certificado>\\n${certificado}\\n</certificado>` }] }],\n      generationConfig: { temperature: 0, responseMimeType: 'application/json', responseSchema: schema },\n    },\n  },\n}];\n"
+      }
+    },
+    {
+      "id": "hc-18",
+      "name": "Sem chave do Gemini?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3300,
+        160
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Sem chave do Gemini?-cond",
+              "leftValue": "={{ $json.simular }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "hc-19",
+      "name": "Resposta simulada",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3520,
+        40
+      ],
+      "parameters": {
+        "jsCode": "// Sem GEMINI_API_KEY: devolve uma classificação de demonstração por palavras-chave, no mesmo\n// formato da resposta do Gemini, para testar o resto do fluxo. A página avisa que é simulação.\nconst texto = $input.first().json.texto_anonimizado;\nconst t = texto.toLowerCase();\nconst horas = Number((t.match(/(\\d+(?:[.,]\\d+)?)\\s*h(?:oras)?\\b/) ?? [])[1]?.replace(',', '.')) || null;\n\nlet tipo = 'Curso extracurricular na área de concentração do curso';\nif (/palestra|webinar/.test(t)) tipo = 'Palestra na área de concentração do curso';\nelse if (/ingl[eê]s|espanhol|idioma|english/.test(t)) tipo = 'Curso de Línguas Estrangeiras';\n\nconst classificacao = {\n  e_comprovante: true,\n  tipo_sigaa: tipo,\n  variante: 'padrao',\n  quantidades: { horas, dias: null, meses: null, semestres: null, anos: null },\n  atividade: 'Atividade do certificado (simulação)',\n  instituicao: 'Não identificada (simulação)',\n  periodo: '',\n  ano_conclusao: null,\n  papel: 'participante',\n  descricao_sigaa: 'Classificação simulada: configure GEMINI_API_KEY para a análise real.',\n  confianca: 'baixa',\n  justificativa: 'Modo demonstração: classificação por palavras-chave, sem modelo de IA.',\n  alternativas: [],\n  evidencia_faltante: null,\n  alerta_instrucao_suspeita: false,\n};\n\nreturn [{\n  json: {\n    simulado: true,\n    statusCode: 200,\n    body: {\n      candidates: [{ content: { parts: [{ text: JSON.stringify(classificacao) }] } }],\n      usageMetadata: { promptTokenCount: 0, candidatesTokenCount: 0 },\n    },\n  },\n}];\n"
+      }
+    },
+    {
+      "id": "hc-20",
+      "name": "Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3520,
+        280
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json.modelo }}:generateContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-goog-api-key",
+              "value": "={{ $env.GEMINI_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requisicao) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 90000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "hc-21",
+      "name": "Validar e calcular",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3740,
+        160
+      ],
+      "parameters": {
+        "jsCode": "// Valida a resposta do modelo e calcula as horas pela tabela regras/categorias-2022-1.json.\n// O modelo só escolhe categoria, variante e quantidades; toda conta é feita aqui.\nconst fs = require('fs');\nconst regras = JSON.parse(fs.readFileSync('/data/regras/categorias-2022-1.json', 'utf8'));\nconst base = $('Montar requisição').first().json;\nconst r = $input.first().json;\n\nconst num = (v) => Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 });\nconst arred = (v) => Math.round(v * 100) / 100;\nconst UNIDADE = { por_hora: 'horas', por_dia: 'dias', por_mes: 'meses', por_semestre: 'semestres', por_ano: 'anos' };\n\nfunction calcular(regras, c) {\n  const cat = regras.categorias.find((x) => x.tipo_sigaa === c.tipo_sigaa);\n  if (!cat) return { status: 'a_confirmar', motivo: 'Categoria sem regra cadastrada.' };\n\n  const tetoPct = cat.teto_pct[c.variante] ?? cat.teto_pct.padrao;\n  const resultado = {\n    status: 'confirmado',\n    teto_pct: tetoPct,\n    teto_ha: arred((regras.total_ac_ha * tetoPct) / 100),\n    total_ac_ha: regras.total_ac_ha,\n    norma: cat.norma === 'cgrad05_23' ? 'Resolução CGRAD 05/23' : 'Resolução CGRAD 19/11',\n    artigo: cat.artigo,\n    url_fonte: regras.fontes[cat.norma],\n    observacao: cat.observacao ?? null,\n    ha_calculadas: null,\n    ha_abatidas: null,\n    conta: null,\n  };\n  if (cat.calculo === 'a_definir') {\n    return { ...resultado, status: 'a_confirmar', motivo: 'A norma não define a fórmula: a Coordenação decide o valor.' };\n  }\n\n  const k = cat.k[c.variante] ?? cat.k.padrao;\n  if (k === undefined) {\n    return { ...resultado, status: 'a_confirmar', motivo: `Não sei qual fator usar (variante \"${c.variante}\").` };\n  }\n\n  const unidade = UNIDADE[cat.calculo];\n  const qtd = unidade ? Number(c.quantidades?.[unidade]) : 1;\n  if (unidade && !(qtd > 0)) {\n    return { ...resultado, status: 'a_confirmar', motivo: `O certificado não informa ${unidade === 'horas' ? 'a carga horária' : `o número de ${unidade}`}.` };\n  }\n\n  let ha;\n  let conta;\n  if (cat.calculo === 'por_hora') {\n    const fator = cat.ha_por_hora ?? 1.2;\n    ha = k * qtd * fator;\n    conta = `${num(qtd)} h × K ${num(k)} × ${num(fator)}`;\n  } else if (cat.calculo === 'por_dia') {\n    ha = k * 9.6 * qtd;\n    conta = `${num(qtd)} dia(s) × 9,6 × K ${num(k)}`;\n  } else if (cat.calculo === 'fixo') {\n    ha = k * cat.base_ha;\n    conta = `${num(cat.base_ha)} h/a × K ${num(k)}`;\n  } else {\n    ha = k * cat.base_ha * qtd;\n    conta = `${num(qtd)} ${unidade} × ${num(cat.base_ha)} h/a × K ${num(k)}`;\n  }\n  ha = arred(ha);\n  return {\n    ...resultado,\n    ha_calculadas: ha,\n    ha_abatidas: Math.min(ha, resultado.teto_ha),\n    limitado_pelo_teto: ha > resultado.teto_ha,\n    conta: `${conta} = ${num(ha)} h/a`,\n  };\n}\n\nconst falha = (erro) => [{ json: { origem: base.origem, modo: base.modo, erro } }];\n\nif (r.statusCode === 429) return falha('O limite gratuito do modelo de IA acabou por agora. Tente de novo em alguns minutos.');\nif (r.statusCode !== 200) return falha(`O modelo de IA não respondeu (erro ${r.statusCode ?? 'de rede'}). Tente de novo.`);\n\nlet c;\ntry {\n  c = JSON.parse(r.body.candidates[0].content.parts[0].text);\n} catch (e) {\n  return falha('O modelo de IA devolveu uma resposta fora do formato. Tente de novo.');\n}\nif (!c.e_comprovante) {\n  return falha(`Este arquivo não parece um certificado ou comprovante de atividade. ${c.justificativa ?? ''}`.trim());\n}\n\nconst horas = Number(c.quantidades?.horas);\nconst uso = r.body.usageMetadata ?? {};\nreturn [{\n  json: {\n    origem: base.origem,\n    modo: base.modo,\n    versao: base.versao,\n    modelo: base.modelo,\n    simulado: Boolean(r.simulado),\n    linha_data: base.linha_data,\n    classificacao: c,\n    calculo: calcular(regras, c),\n    ha_certificado: horas > 0 ? arred(horas * 1.2) : null,\n    tokens: { entrada: uso.promptTokenCount ?? 0, saida: uso.candidatesTokenCount ?? 0 },\n    erro: '',\n  },\n}];\n"
+      }
+    },
+    {
+      "id": "hc-22",
+      "name": "Classificação ok?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3960,
+        160
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Classificação ok?-cond",
+              "leftValue": "={{ $json.erro }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "hc-23",
+      "name": "Veio do formulário?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4180,
+        100
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Veio do formulário?-cond",
+              "leftValue": "={{ $json.origem }}",
+              "rightValue": "formulario",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "hc-24",
+      "name": "Preparar merge",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4400,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Declaração datada + certificado. O Gotenberg junta em ordem alfabética do nome do arquivo.\nconst prep = $('Preparar certificado').first();\nconst declaracao = await this.helpers.prepareBinaryData(\n  Buffer.from(prep.json.declaracao_datada_b64, 'base64'), '1_declaracao.pdf', 'application/pdf',\n);\nreturn [{\n  json: $input.first().json,\n  binary: { declaracao, certificado: { ...prep.binary.certificado, fileName: '2_certificado.pdf' } },\n}];\n"
+      }
+    },
+    {
+      "id": "hc-25",
+      "name": "Gotenberg: juntar PDFs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4620,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://gotenberg:3000/forms/pdfengines/merge",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "files",
+              "inputDataFieldName": "declaracao"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "files",
+              "inputDataFieldName": "certificado"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "pdf_final"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "hc-26",
+      "name": "Montar página",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4840,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Página de resultado: o que marcar no SIGAA, quantas horas abatem e os PDFs para baixar.\n// O formulário do n8n troca o corpo da página por este HTML (sem scripts), então tudo é estático.\nconst r = $('Validar e calcular').first().json;\nconst final = $input.first().binary?.pdf_final;\nif (!final) throw new Error(`Gotenberg não juntou os PDFs: ${$input.first().json.error?.message ?? 'sem resposta'}`);\n\nconst c = r.classificacao;\nconst calc = r.calculo;\nconst esc = (s) => String(s ?? '').replace(/[&<>\"']/g, (ch) => (\n  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[ch]\n));\nconst num = (v) => Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 });\nconst slug = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '')\n  .replace(/[^\\w]+/g, '_').replace(/^_|_$/g, '').slice(0, 50) || 'atividade';\n\nconst pdfFinal = (await this.helpers.getBinaryDataBuffer(0, 'pdf_final')).toString('base64');\nconst pdfBase = r.modo === 'primeiro_uso' ? $('Guardar base').first().json.declaracao_base_b64 : null;\n\nconst horas = calc.ha_abatidas !== null\n  ? `<p class=\"valor\">${num(calc.ha_abatidas)} h/a</p>\n     <p class=\"conta\">${esc(calc.conta)}${calc.limitado_pelo_teto ? ` → limitado ao teto de ${num(calc.teto_ha)} h/a` : ''}</p>`\n  : `<p class=\"valor pendente\">A confirmar</p><p class=\"conta\">${esc(calc.motivo)} Confirme com a Coordenação.</p>`;\n\nconst alertas = [];\nif (r.simulado) alertas.push('<strong>Modo demonstração:</strong> sem chave do Gemini, a classificação foi feita por palavras-chave. Não use este resultado.');\nif (c.alerta_instrucao_suspeita) alertas.push('O certificado contém um texto que tenta instruir a IA. Ele foi ignorado, mas confira se o documento é legítimo.');\nif (c.confianca !== 'alta') alertas.push(`Confiança <strong>${esc(c.confianca)}</strong>: ${esc(c.justificativa)}${c.alternativas?.length ? ` Outras opções possíveis: ${c.alternativas.map(esc).join('; ')}.` : ''}`);\nif (c.evidencia_faltante) alertas.push(`Falta no certificado: ${esc(c.evidencia_faltante)}`);\n\nconst html = `\n<style>\n  #hc { max-width: 680px; margin: 24px auto; padding: 0 16px; font-family: system-ui, -apple-system, \"Segoe UI\", sans-serif; color: #1f2328; line-height: 1.5; }\n  #hc h1 { font-size: 22px; margin: 0 0 4px; }\n  #hc .sub { color: #59636e; margin: 0 0 20px; }\n  #hc .destaque { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }\n  #hc .card { border: 1px solid #d1d9e0; border-radius: 10px; padding: 14px 16px; background: #fff; }\n  #hc .rotulo { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #59636e; margin: 0 0 4px; }\n  #hc .tipo { font-size: 17px; font-weight: 650; margin: 0; }\n  #hc .valor { font-size: 28px; font-weight: 700; margin: 0; color: #1a7f37; }\n  #hc .valor.pendente { color: #9a6700; font-size: 22px; }\n  #hc .conta { font-size: 13px; color: #59636e; margin: 4px 0 0; }\n  #hc .alerta { border-left: 4px solid #d4a72c; background: #fff8c5; padding: 10px 12px; border-radius: 6px; margin: 0 0 10px; font-size: 14px; }\n  #hc dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; font-size: 14px; }\n  #hc dt { color: #59636e; }\n  #hc dd { margin: 0; }\n  #hc textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; padding: 8px; border: 1px solid #d1d9e0; border-radius: 6px; resize: vertical; }\n  #hc .botoes { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }\n  #hc .botao { display: inline-block; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; }\n  #hc .primario { background: #1f6feb; color: #fff; }\n  #hc .secundario { background: #f6f8fa; color: #1f2328; border: 1px solid #d1d9e0; }\n  #hc ol { padding-left: 20px; font-size: 14px; }\n  #hc .rodape { font-size: 12px; color: #59636e; border-top: 1px solid #d1d9e0; padding-top: 12px; margin-top: 20px; }\n  #hc a { color: #0969da; }\n  @media (max-width: 520px) { #hc .destaque { grid-template-columns: 1fr; } }\n</style>\n<div id=\"hc\">\n  <h1>Pronto para lançar no SIGAA</h1>\n  <p class=\"sub\">${esc(c.atividade)} · ${esc(c.instituicao)}</p>\n\n  <div class=\"destaque\">\n    <div class=\"card\"><p class=\"rotulo\">Marque no SIGAA</p><p class=\"tipo\">${esc(c.tipo_sigaa)}</p></div>\n    <div class=\"card\"><p class=\"rotulo\">Horas que serão abatidas</p>${horas}</div>\n  </div>\n\n  ${alertas.map((a) => `<p class=\"alerta\">${a}</p>`).join('\\n  ')}\n\n  <div class=\"botoes\">\n    <a class=\"botao primario\" download=\"AC_${slug(c.atividade)}.pdf\" href=\"data:application/pdf;base64,${pdfFinal}\">Baixar PDF para o SIGAA</a>\n    ${pdfBase ? `<a class=\"botao secundario\" download=\"minha-declaracao-base.pdf\" href=\"data:application/pdf;base64,${pdfBase}\">Baixar minha declaração-base</a>` : ''}\n  </div>\n  ${pdfBase ? '<p class=\"conta\" style=\"margin:-8px 0 16px\">Guarde a declaração-base: no próximo certificado, escolha \"Já tenho minha declaração-base\" e envie só ela e o certificado. A data é trocada sozinha.</p>' : ''}\n\n  <div class=\"card\">\n    <p class=\"rotulo\">Descrição para colar no SIGAA</p>\n    <textarea rows=\"2\" readonly>${esc(c.descricao_sigaa)}</textarea>\n    <dl style=\"margin-top:12px\">\n      <dt>Período</dt><dd>${esc(c.periodo) || '—'}</dd>\n      <dt>Carga do certificado</dt><dd>${c.quantidades?.horas ? `${num(c.quantidades.horas)} h` : '—'}</dd>\n      <dt>Teto da categoria</dt><dd>${num(calc.teto_ha ?? 0)} h/a (${num(calc.teto_pct ?? 0)}% das ${num(calc.total_ac_ha ?? 450)} h/a)</dd>\n      <dt>Regra</dt><dd>${calc.url_fonte ? `<a href=\"${esc(calc.url_fonte)}\" target=\"_blank\" rel=\"noopener\">${esc(calc.norma)}</a>, ${esc(calc.artigo)}` : '—'}</dd>\n    </dl>\n  </div>\n\n  <p class=\"conta\">O teto é somado por categoria. Se você já tem ${num(calc.teto_ha ?? 0)} h/a lançadas em \"${esc(c.tipo_sigaa)}\", este certificado não abate mais nada.</p>\n\n  <p class=\"rotulo\" style=\"margin-top:18px\">Como lançar</p>\n  <ol>\n    <li>SIGAA → Portal do Discente → Ensino → Registro de Atividades Complementares (ou Autônomas) → Cadastrar Novo Registro.</li>\n    <li>Tipo: <strong>${esc(c.tipo_sigaa)}</strong>.</li>\n    <li>Anexe o PDF baixado (declaração datada + certificado) e cole a descrição.</li>\n  </ol>\n\n  <p class=\"rodape\">A validação final é da Coordenação do curso. Matriz considerada: Eng. de Computação Leopoldina, ingresso 2022.1 (450 h/a).\n  Nada foi guardado: os arquivos foram descartados ao fim do processamento.</p>\n</div>`;\n\nreturn [{ json: { resposta: html, content_type: 'text/html; charset=utf-8', status: 200 } }];\n"
+      }
+    },
+    {
+      "id": "hc-27",
+      "name": "Resposta API",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4840,
+        220
+      ],
+      "parameters": {
+        "jsCode": "// Resposta JSON da API de avaliação.\nconst r = $input.first().json;\nconst corpo = {\n  versao: r.versao,\n  modelo: r.modelo,\n  simulado: r.simulado,\n  tipo_sigaa: r.classificacao.tipo_sigaa,\n  ha_certificado: r.ha_certificado,\n  ha_abatidas: r.calculo.ha_abatidas,\n  teto_ha: r.calculo.teto_ha,\n  regra_status: r.calculo.status,\n  regra_fonte: r.calculo.url_fonte ? `${r.calculo.norma}, ${r.calculo.artigo}` : null,\n  classificacao: r.classificacao,\n  calculo: r.calculo,\n  tokens: r.tokens,\n};\nreturn [{ json: { resposta: JSON.stringify(corpo), content_type: 'application/json; charset=utf-8', status: 200 } }];\n"
+      }
+    },
+    {
+      "id": "hc-28",
+      "name": "Formatar erro",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4840,
+        460
+      ],
+      "parameters": {
+        "jsCode": "// Erro esperado (entrada incompleta, declaração errada, certificado escaneado, limite do modelo):\n// página amigável no formulário, JSON 422 na API.\nconst { origem, erro } = $input.first().json;\nconst mensagem = erro || 'Algo deu errado. Tente de novo.';\n\nif (origem === 'api') {\n  return [{ json: { resposta: JSON.stringify({ erro: mensagem }), content_type: 'application/json; charset=utf-8', status: 422 } }];\n}\n\nconst esc = (s) => String(s).replace(/[&<>\"']/g, (ch) => (\n  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[ch]\n));\nconst html = `\n<div style=\"max-width:560px;margin:40px auto;padding:0 16px;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#1f2328;line-height:1.5\">\n  <h1 style=\"font-size:22px;margin:0 0 12px\">Não deu para concluir</h1>\n  <p style=\"border-left:4px solid #cf222e;background:#ffebe9;padding:12px 14px;border-radius:6px;margin:0 0 16px\">${esc(mensagem)}</p>\n  <p style=\"color:#59636e;font-size:14px\">Recarregue a página para enviar de novo. Nada do que você enviou foi guardado.</p>\n</div>`;\nreturn [{ json: { resposta: html, content_type: 'text/html; charset=utf-8', status: 200 } }];\n"
+      }
+    },
+    {
+      "id": "hc-29",
+      "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        5060,
+        220
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.resposta }}",
+        "options": {
+          "responseCode": "={{ $json.status }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "={{ $json.content_type }}"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Formulário": {
+      "main": [
+        [
+          {
+            "node": "Normalizar formulário",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API classificar": {
+      "main": [
+        [
+          {
+            "node": "Normalizar API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar formulário": {
+      "main": [
+        [
+          {
+            "node": "Entrada ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar API": {
+      "main": [
+        [
+          {
+            "node": "Entrada ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Entrada ok?": {
+      "main": [
+        [
+          {
+            "node": "Precisa de declaração?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Formatar erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Precisa de declaração?": {
+      "main": [
+        [
+          {
+            "node": "Primeiro uso?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Preparar certificado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Primeiro uso?": {
+      "main": [
+        [
+          {
+            "node": "Montar declaração",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Datar declaração",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar declaração": {
+      "main": [
+        [
+          {
+            "node": "Gotenberg: HTML para PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gotenberg: HTML para PDF": {
+      "main": [
+        [
+          {
+            "node": "Guardar base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar base": {
+      "main": [
+        [
+          {
+            "node": "Datar declaração",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Datar declaração": {
+      "main": [
+        [
+          {
+            "node": "Preparar certificado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar certificado": {
+      "main": [
+        [
+          {
+            "node": "Declaração ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Declaração ok?": {
+      "main": [
+        [
+          {
+            "node": "Extrair texto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Formatar erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair texto": {
+      "main": [
+        [
+          {
+            "node": "Anonimizar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anonimizar": {
+      "main": [
+        [
+          {
+            "node": "Texto ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Texto ok?": {
+      "main": [
+        [
+          {
+            "node": "Montar requisição",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Formatar erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar requisição": {
+      "main": [
+        [
+          {
+            "node": "Sem chave do Gemini?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sem chave do Gemini?": {
+      "main": [
+        [
+          {
+            "node": "Resposta simulada",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resposta simulada": {
+      "main": [
+        [
+          {
+            "node": "Validar e calcular",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini": {
+      "main": [
+        [
+          {
+            "node": "Validar e calcular",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar e calcular": {
+      "main": [
+        [
+          {
+            "node": "Classificação ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classificação ok?": {
+      "main": [
+        [
+          {
+            "node": "Veio do formulário?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Formatar erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Veio do formulário?": {
+      "main": [
+        [
+          {
+            "node": "Preparar merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resposta API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar merge": {
+      "main": [
+        [
+          {
+            "node": "Gotenberg: juntar PDFs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gotenberg: juntar PDFs": {
+      "main": [
+        [
+          {
+            "node": "Montar página",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar página": {
+      "main": [
+        [
+          {
+            "node": "Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resposta API": {
+      "main": [
+        [
+          {
+            "node": "Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar erro": {
+      "main": [
+        [
+          {
+            "node": "Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  },
+  "pinData": {},
+  "active": false
+}

@@ -1,0 +1,5 @@
+arquivo,tipo_esperado,nome,matricula,ha_homologadas,alerta_esperado
+../samples/certificado-curso-docker.pdf,Curso extracurricular na área de concentração do curso,Fulana de Tal Exemplo,20240000001,24,nao
+../samples/certificado-palestra.pdf,Palestra na área de concentração do curso,Fulana de Tal Exemplo,,2.4,nao
+../samples/certificado-ingles.pdf,Curso de Línguas Estrangeiras,Fulana de Tal Exemplo,20240000001,36,nao
+../samples/certificado-com-instrucao.pdf,Curso extracurricular em área diferenciada da área de concentração do curso,Fulana de Tal Exemplo,,2.4,sim

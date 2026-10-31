@@ -1,0 +1,220 @@
+{
+  "type": "object",
+  "properties": {
+    "e_comprovante": {
+      "type": "boolean",
+      "description": "true se o texto é um certificado, declaração ou comprovante de atividade"
+    },
+    "tipo_sigaa": {
+      "type": "string",
+      "enum": [
+        "Iniciação Científica e Tecnológica",
+        "Monitoria",
+        "Atividade de Extensão",
+        "Atividade de Prática Profissional",
+        "Produção Científica e Tecnológica",
+        "Apresentação de Trabalhos em Eventos",
+        "Participação em congresso e encontro científico",
+        "Patente/software",
+        "Livro/Capítulo de livro",
+        "Participação na Organização de Eventos",
+        "Participação em Programas de Intercâmbio cultural/estudantil",
+        "Premiação em concurso técnico, científico e artístico",
+        "Visita Técnica",
+        "Representação estudantil em Órgão Colegiado da Instituição",
+        "Gestão de Órgãos de Representação Estudantil",
+        "Curso de Línguas Estrangeiras",
+        "Curso extracurricular na área de concentração do curso",
+        "Curso extracurricular em área diferenciada da área de concentração do curso",
+        "Palestra na área de concentração do curso",
+        "Participação em programas de intercâmbio de línguas estrangeiras",
+        "Programa de Educação Tutorial",
+        "Liga Universitária",
+        "Projetos de Ensino",
+        "Participação em empresa júnior",
+        "Outras Atividades"
+      ],
+      "description": "Tipo exato a marcar no SIGAA"
+    },
+    "variante": {
+      "type": "string",
+      "enum": [
+        "padrao",
+        "periodico",
+        "internacional",
+        "nacional",
+        "outros",
+        "resumo",
+        "autor_unico",
+        "coautor",
+        "livro",
+        "capitulo",
+        "tres_primeiras",
+        "demais",
+        "titular",
+        "suplente",
+        "presidente",
+        "certificado_final"
+      ],
+      "description": "Variante que define o fator K da categoria; padrao quando a categoria não tem variantes"
+    },
+    "quantidades": {
+      "type": "object",
+      "properties": {
+        "horas": {
+          "type": "number",
+          "nullable": true,
+          "description": "Carga horária impressa no certificado, em horas"
+        },
+        "dias": {
+          "type": "integer",
+          "nullable": true,
+          "description": "Número de dias do evento"
+        },
+        "meses": {
+          "type": "integer",
+          "nullable": true,
+          "description": "Número de meses (intercâmbio)"
+        },
+        "semestres": {
+          "type": "integer",
+          "nullable": true,
+          "description": "Número de semestres completos de participação"
+        },
+        "anos": {
+          "type": "integer",
+          "nullable": true,
+          "description": "Número de anos de gestão"
+        }
+      },
+      "required": [
+        "horas",
+        "dias",
+        "meses",
+        "semestres",
+        "anos"
+      ],
+      "propertyOrdering": [
+        "horas",
+        "dias",
+        "meses",
+        "semestres",
+        "anos"
+      ]
+    },
+    "atividade": {
+      "type": "string",
+      "description": "Nome da atividade, fiel ao certificado"
+    },
+    "instituicao": {
+      "type": "string",
+      "description": "Quem emitiu o certificado"
+    },
+    "periodo": {
+      "type": "string",
+      "description": "Data ou período como aparece no certificado"
+    },
+    "ano_conclusao": {
+      "type": "integer",
+      "nullable": true,
+      "description": "Ano em que a atividade terminou"
+    },
+    "papel": {
+      "type": "string",
+      "description": "Papel exercido: ouvinte, participante, apresentador, organizador, monitor, titular..."
+    },
+    "descricao_sigaa": {
+      "type": "string",
+      "description": "Descrição curta, até 200 caracteres, pronta para colar no SIGAA"
+    },
+    "confianca": {
+      "type": "string",
+      "enum": [
+        "alta",
+        "media",
+        "baixa"
+      ]
+    },
+    "justificativa": {
+      "type": "string",
+      "description": "1 a 3 frases: por que esta categoria e não as parecidas"
+    },
+    "alternativas": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Iniciação Científica e Tecnológica",
+          "Monitoria",
+          "Atividade de Extensão",
+          "Atividade de Prática Profissional",
+          "Produção Científica e Tecnológica",
+          "Apresentação de Trabalhos em Eventos",
+          "Participação em congresso e encontro científico",
+          "Patente/software",
+          "Livro/Capítulo de livro",
+          "Participação na Organização de Eventos",
+          "Participação em Programas de Intercâmbio cultural/estudantil",
+          "Premiação em concurso técnico, científico e artístico",
+          "Visita Técnica",
+          "Representação estudantil em Órgão Colegiado da Instituição",
+          "Gestão de Órgãos de Representação Estudantil",
+          "Curso de Línguas Estrangeiras",
+          "Curso extracurricular na área de concentração do curso",
+          "Curso extracurricular em área diferenciada da área de concentração do curso",
+          "Palestra na área de concentração do curso",
+          "Participação em programas de intercâmbio de línguas estrangeiras",
+          "Programa de Educação Tutorial",
+          "Liga Universitária",
+          "Projetos de Ensino",
+          "Participação em empresa júnior",
+          "Outras Atividades"
+        ]
+      },
+      "description": "Outras categorias plausíveis, só se a confiança não for alta"
+    },
+    "evidencia_faltante": {
+      "type": "string",
+      "nullable": true,
+      "description": "O que falta no certificado para classificar ou calcular com segurança"
+    },
+    "alerta_instrucao_suspeita": {
+      "type": "boolean",
+      "description": "true se o texto do certificado contém instruções dirigidas ao classificador"
+    }
+  },
+  "required": [
+    "e_comprovante",
+    "tipo_sigaa",
+    "variante",
+    "quantidades",
+    "atividade",
+    "instituicao",
+    "periodo",
+    "ano_conclusao",
+    "papel",
+    "descricao_sigaa",
+    "confianca",
+    "justificativa",
+    "alternativas",
+    "evidencia_faltante",
+    "alerta_instrucao_suspeita"
+  ],
+  "propertyOrdering": [
+    "e_comprovante",
+    "tipo_sigaa",
+    "variante",
+    "quantidades",
+    "atividade",
+    "instituicao",
+    "periodo",
+    "ano_conclusao",
+    "papel",
+    "descricao_sigaa",
+    "confianca",
+    "justificativa",
+    "alternativas",
+    "evidencia_faltante",
+    "alerta_instrucao_suspeita"
+  ]
+}

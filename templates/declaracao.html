@@ -1,0 +1,72 @@
+<!doctype html>
+<!--
+  Declaração de Autenticidade — Anexo I da Resolução CGRAD 04/22 (CEFET-MG).
+  O n8n troca os {{campos}} já escapados para HTML e o Gotenberg converte para PDF.
+
+  A declaração-base sai SEM data: o serviço `declaracao` carimba "Leopoldina, <hoje>"
+  centralizado a DATA_TOPO_MM do topo. Se mudar a posição do .data abaixo, mude
+  KIT_DATA_TOPO_MM em services/declaracao/app.py junto.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Declaração de Autenticidade</title>
+<style>
+  @page { size: A4; margin: 0; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 210mm; height: 297mm; position: relative;
+    font-family: Arial, "Liberation Sans", Helvetica, sans-serif;
+    font-size: 12pt; color: #000; background: #fff;
+  }
+  .cabecalho { position: absolute; top: 25mm; left: 0; right: 0; text-align: center; font-weight: bold; line-height: 1.5; }
+  .titulo { position: absolute; top: 62mm; left: 0; right: 0; text-align: center; font-weight: bold; }
+  .corpo .dado { white-space: nowrap; }
+  .corpo { position: absolute; top: 80mm; left: 25mm; right: 25mm; text-align: justify; line-height: 1.6; }
+  /* Espaço reservado para a data carimbada pelo serviço (linha de base a 175 mm do topo). */
+  .data { position: absolute; top: 169mm; left: 0; right: 0; height: 8mm; }
+  .rotulo-data { position: absolute; top: 180mm; left: 0; right: 0; text-align: center; }
+  .assinatura {
+    position: absolute; top: 200mm; left: 55mm; width: 100mm; height: 28mm;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  /*
+    Remoção do fundo sem IA: o filtro deixa o papel branco puro e o traço escuro,
+    e o multiply faz o branco sumir sobre a página. Funciona com foto de celular
+    com sombra leve; sombra forte pode deixar mancha.
+  */
+  .assinatura img {
+    max-width: 100%; max-height: 100%;
+    filter: grayscale(1) brightness(1.35) contrast(3.2);
+    mix-blend-mode: multiply;
+  }
+  .linha { position: absolute; top: 229mm; left: 55mm; width: 100mm; border-top: 1px solid #000; }
+  .rotulo-assinatura { position: absolute; top: 231mm; left: 0; right: 0; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="cabecalho">
+    CENTRO FEDERAL DE EDUCAÇÃO TECNOLÓGICA DE MINAS GERAIS<br>
+    UNIDADE DE LEOPOLDINA<br>
+    COORDENAÇÃO DE ENGENHARIA DE COMPUTAÇÃO
+  </div>
+
+  <div class="titulo">DECLARAÇÃO DE AUTENTICIDADE</div>
+
+  <div class="corpo">
+    Eu, <span class="dado">{{nome}}</span>, matriculado(a) no curso Engenharia de Computação do CEFET-MG,
+    campus Leopoldina, número de matrícula <span class="dado">{{matricula}}</span>, portador(a) da carteira
+    de identidade <span class="dado">{{rg}}</span>, inscrito(a) no CPF sob o número <span class="dado">{{cpf}}</span>, DECLARO que o
+    documento cadastrado é autêntico. Afirmo estar ciente de que a falsidade
+    documental, verificada a qualquer tempo, implicará em nulidade do lançamento
+    das atividades no Sistema Acadêmico, além das sanções penais e cíveis cabíveis.
+  </div>
+
+  <div class="data"></div>
+  <div class="rotulo-data">Local e Data</div>
+
+  <div class="assinatura"><img src="{{assinatura}}" alt=""></div>
+  <div class="linha"></div>
+  <div class="rotulo-assinatura">Assinatura do(a) aluno(a)</div>
+</body>
+</html>

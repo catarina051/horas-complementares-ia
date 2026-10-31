@@ -1,0 +1,19 @@
+# Segredos
+.env
+
+# Dados reais nunca entram no repositório: certificados, declarações, assinaturas
+*.pdf
+*.png
+*.jpg
+*.jpeg
+!samples/**
+evals/certificados/
+evals/gabarito.csv
+evals/resultados/*.json
+
+# Python / Node
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+node_modules/

@@ -1,0 +1,221 @@
+{
+  "descricao": "Valoração das Atividades Complementares para Eng. de Computação, CEFET-MG Leopoldina, matriz de ingresso 2022.1. Total do PPC + tabela da Resolução CGRAD 05/23 (em vigor desde 14/11/2023, revogou a CGRAD 17/11 sem regra de transição). Veja regras/README.md.",
+  "total_ac_ha": 450,
+  "fonte_total": {
+    "norma": "PPC de Engenharia de Computação, campus Leopoldina, versão 2 (2019)",
+    "artigo": "Seção de carga horária: 450 horas-aula (375 horas) de atividades complementares; 1 h/a = 50 min",
+    "url": "http://www.eng-computacao.leopoldina.cefetmg.br/wp-content/uploads/sites/178/2019/03/PPC_CECOMLP_v21.pdf"
+  },
+  "arredondamento": "A soma das horas validadas é convertida em horas-aula e arredondada para o próximo inteiro (CGRAD 05/23, art. 9º).",
+  "fontes": {
+    "cgrad05_23": "https://www.sistemasdeinformacao.varginha.cefetmg.br/wp-content/uploads/sites/323/2024/05/RESOLU%C3%87%C3%83O-05.2023.pdf",
+    "cgrad19_11": "http://www.dirgrad.cefetmg.br/wp-content/uploads/sites/81/2017/08/03_Res_CGRAD_19_11_-_Atividades_de_Prxtica_Profissional.pdf"
+  },
+  "calculos": {
+    "por_hora": "h/a = K × horas × ha_por_hora (padrão 1,2)",
+    "por_dia": "h/a = K × 9,6 × dias",
+    "fixo": "h/a = K × base_ha (por ocorrência)",
+    "por_mes": "h/a = K × base_ha × meses",
+    "por_semestre": "h/a = K × base_ha × semestres",
+    "por_ano": "h/a = K × base_ha × anos",
+    "a_definir": "sem fórmula na norma: definido pela Coordenação do eixo e homologado pelo Colegiado"
+  },
+  "categorias": [
+    {
+      "tipo_sigaa": "Iniciação Científica e Tecnológica",
+      "grupo": "AC",
+      "calculo": "por_semestre", "base_ha": 120, "k": { "padrao": 1 },
+      "teto_pct": { "padrao": 80 },
+      "norma": "cgrad05_23", "artigo": "Art. 3º, I", "status": "confirmado",
+      "observacao": "Exige relatório técnico final aprovado. Um artigo do projeto é outra evidência (Produção Científica)."
+    },
+    {
+      "tipo_sigaa": "Monitoria",
+      "grupo": "AC",
+      "calculo": "por_semestre", "base_ha": 45, "k": { "padrao": 1 },
+      "teto_pct": { "padrao": 80 },
+      "norma": "cgrad05_23", "artigo": "Art. 3º, II", "status": "confirmado",
+      "observacao": "Exige relatório técnico final aprovado."
+    },
+    {
+      "tipo_sigaa": "Atividade de Extensão",
+      "grupo": "AC",
+      "calculo": "a_definir",
+      "teto_pct": { "padrao": 50 },
+      "norma": "cgrad05_23", "artigo": "Art. 3º, III", "status": "nao_encontrado",
+      "observacao": "Só conta o que excede a carga obrigatória de extensão do PPC. A norma dá o teto, mas não a fórmula de horas."
+    },
+    {
+      "tipo_sigaa": "Atividade de Prática Profissional",
+      "grupo": "AC",
+      "calculo": "por_hora", "k": { "padrao": 1 }, "ha_por_hora": 0.25,
+      "teto_pct": { "padrao": 50 },
+      "norma": "cgrad19_11", "artigo": "Art. 15 (60 h = 15 h/a); teto: CGRAD 05/23, art. 3º, IV", "status": "confirmado",
+      "observacao": "Cada 60 h de prática valem 15 h/a, por isso 0,25 h/a por hora em vez de 1,2. Estágio não obrigatório, laboratório, projeto orientado, emprego ou sociedade na área. Curso feito durante o estágio continua sendo curso."
+    },
+    {
+      "tipo_sigaa": "Produção Científica e Tecnológica",
+      "grupo": "OAC",
+      "calculo": "fixo", "base_ha": 36,
+      "k": { "periodico": 2, "internacional": 1.5, "nacional": 1, "outros": 0.5, "resumo": 0.1 },
+      "teto_pct": { "padrao": 70 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 1", "status": "confirmado",
+      "observacao": "Variante: periodico, internacional (congresso), nacional (congresso), outros (outros eventos) ou resumo."
+    },
+    {
+      "tipo_sigaa": "Apresentação de Trabalhos em Eventos",
+      "grupo": "OAC",
+      "calculo": "fixo", "base_ha": 12,
+      "k": { "internacional": 1.5, "nacional": 1, "outros": 0.5 },
+      "teto_pct": { "padrao": 70 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 2", "status": "confirmado",
+      "observacao": "Outros eventos: seminários, simpósios, conferências, fóruns, encontros, mostras, exposições, Semana C&T, META."
+    },
+    {
+      "tipo_sigaa": "Participação em congresso e encontro científico",
+      "grupo": "OAC",
+      "calculo": "por_dia",
+      "k": { "internacional": 1.5, "nacional": 1, "outros": 0.5 },
+      "teto_pct": { "padrao": 50 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 3", "status": "confirmado",
+      "observacao": "Conta por dia de evento, não pelas horas do certificado."
+    },
+    {
+      "tipo_sigaa": "Patente/software",
+      "grupo": "OAC",
+      "calculo": "fixo", "base_ha": 120,
+      "k": { "autor_unico": 1, "coautor": 0.5 },
+      "teto_pct": { "padrao": 70 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 4", "status": "confirmado"
+    },
+    {
+      "tipo_sigaa": "Livro/Capítulo de livro",
+      "grupo": "OAC",
+      "calculo": "fixo", "base_ha": 120,
+      "k": { "livro": 1, "capitulo": 0.5 },
+      "teto_pct": { "padrao": 70 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 5", "status": "confirmado"
+    },
+    {
+      "tipo_sigaa": "Participação na Organização de Eventos",
+      "grupo": "OAC",
+      "calculo": "fixo", "base_ha": 18, "k": { "padrao": 1 },
+      "teto_pct": { "padrao": 30 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 6", "status": "confirmado"
+    },
+    {
+      "tipo_sigaa": "Participação em Programas de Intercâmbio cultural/estudantil",
+      "grupo": "OAC",
+      "calculo": "por_mes", "base_ha": 12, "k": { "padrao": 1 },
+      "teto_pct": { "padrao": 60 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 7", "status": "confirmado"
+    },
+    {
+      "tipo_sigaa": "Premiação em concurso técnico, científico e artístico",
+      "grupo": "OAC",
+      "calculo": "fixo", "base_ha": 36,
+      "k": { "tres_primeiras": 1, "demais": 0.5 },
+      "teto_pct": { "padrao": 40 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 8", "status": "confirmado"
+    },
+    {
+      "tipo_sigaa": "Visita Técnica",
+      "grupo": "OAC",
+      "calculo": "por_hora", "k": { "padrao": 1.5 },
+      "teto_pct": { "padrao": 40 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 9", "status": "confirmado"
+    },
+    {
+      "tipo_sigaa": "Representação estudantil em Órgão Colegiado da Instituição",
+      "grupo": "OAC",
+      "calculo": "por_semestre", "base_ha": 18,
+      "k": { "titular": 1, "suplente": 0.5 },
+      "teto_pct": { "padrao": 30 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 10", "status": "confirmado",
+      "observacao": "Mínimo de 6 meses; presença de 75% (titular) ou 35% (suplente) das reuniões."
+    },
+    {
+      "tipo_sigaa": "Gestão de Órgãos de Representação Estudantil",
+      "grupo": "OAC",
+      "calculo": "por_ano", "base_ha": 36,
+      "k": { "presidente": 1, "titular": 0.5, "suplente": 0.25 },
+      "teto_pct": { "padrao": 30 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 11", "status": "confirmado",
+      "observacao": "DA e DCE; comprovação emitida pela Diretoria de Graduação."
+    },
+    {
+      "tipo_sigaa": "Curso de Línguas Estrangeiras",
+      "grupo": "OAC",
+      "calculo": "por_hora", "k": { "padrao": 0.5 },
+      "teto_pct": { "padrao": 30 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 12", "status": "confirmado"
+    },
+    {
+      "tipo_sigaa": "Curso extracurricular na área de concentração do curso",
+      "grupo": "OAC",
+      "calculo": "por_hora", "k": { "padrao": 1 },
+      "teto_pct": { "padrao": 40 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 13", "status": "confirmado",
+      "observacao": "Conteúdos e ferramentas que não estão na matriz curricular do curso."
+    },
+    {
+      "tipo_sigaa": "Curso extracurricular em área diferenciada da área de concentração do curso",
+      "grupo": "OAC",
+      "calculo": "por_hora", "k": { "padrao": 0.5 },
+      "teto_pct": { "padrao": 20 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 14", "status": "confirmado"
+    },
+    {
+      "tipo_sigaa": "Palestra na área de concentração do curso",
+      "grupo": "OAC",
+      "calculo": "por_hora", "k": { "padrao": 1 },
+      "teto_pct": { "padrao": 30 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 15", "status": "confirmado"
+    },
+    {
+      "tipo_sigaa": "Participação em programas de intercâmbio de línguas estrangeiras",
+      "grupo": "OAC",
+      "calculo": "por_hora", "k": { "padrao": 1 },
+      "teto_pct": { "padrao": 40 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 16", "status": "confirmado"
+    },
+    {
+      "tipo_sigaa": "Programa de Educação Tutorial",
+      "grupo": "OAC",
+      "calculo": "por_semestre", "base_ha": 144, "k": { "padrao": 1 },
+      "teto_pct": { "certificado_final": 80, "padrao": 50 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 17", "status": "confirmado",
+      "observacao": "Teto de 80% com o certificado final (2 anos); 50% nos demais casos."
+    },
+    {
+      "tipo_sigaa": "Liga Universitária",
+      "grupo": "OAC",
+      "calculo": "por_semestre", "base_ha": 144, "k": { "padrao": 1 },
+      "teto_pct": { "padrao": 80 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 18", "status": "confirmado"
+    },
+    {
+      "tipo_sigaa": "Projetos de Ensino",
+      "grupo": "OAC",
+      "calculo": "por_hora", "k": { "padrao": 1 },
+      "teto_pct": { "padrao": 30 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 19", "status": "confirmado"
+    },
+    {
+      "tipo_sigaa": "Participação em empresa júnior",
+      "grupo": "OAC",
+      "calculo": "por_semestre", "base_ha": 96, "k": { "padrao": 1 },
+      "teto_pct": { "padrao": 30 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 20", "status": "confirmado",
+      "observacao": "Comprovação: declaração do professor supervisor da empresa júnior."
+    },
+    {
+      "tipo_sigaa": "Outras Atividades",
+      "grupo": "OAC",
+      "calculo": "a_definir",
+      "teto_pct": { "padrao": 30 },
+      "norma": "cgrad05_23", "artigo": "Anexo III, item 21", "status": "nao_encontrado",
+      "observacao": "Último recurso. Valor definido caso a caso pela Coordenação do eixo e homologado pelo Colegiado."
+    }
+  ]
+}
