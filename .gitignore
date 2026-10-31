@@ -9,6 +9,7 @@
 !samples/**
 !templates/*.jpg
 !templates/*.png
+!docs/imagens/resultado-exemplo.png
 evals/certificados/
 evals/gabarito.csv
 evals/resultados/*.json

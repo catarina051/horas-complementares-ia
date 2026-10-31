@@ -39,3 +39,7 @@ Primeiro certificado real homologado (curso de 400 h do IFCE, enviado como image
 categoria e horas corretas (228 h/a, igual ao SIGAA), com confiança alta.
 
 Acerto: 1/1 real até agora; a meta é medir com 20 certificados homologados.
+
+Nota de 31/10/2026: esse registro é histórico, anterior à correção dos totais e das matrizes em
+`regras/cursos.json`. Não é benchmark da versão atual nem evidência de melhora da v1 para a v2.
+Os totais do PPC atual e as fontes estão em [`regras/README.md`](../regras/README.md).

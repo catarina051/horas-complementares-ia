@@ -1,0 +1,15 @@
+{
+  "observacao": "Exemplo com certificado fictício de samples/, processado pela API v2 em 31/10/2026. Não é certificado homologado nem benchmark de acurácia.",
+  "entrada": "samples/certificado-curso-docker.pdf",
+  "curso": "eng-computacao",
+  "matriz": "desde-2023-1",
+  "versao": "v2",
+  "modelo": "gemini-3.5-flash-lite",
+  "simulado": false,
+  "tipo_sigaa": "Curso extracurricular na área de concentração do curso",
+  "codigo_sigaa": "ECL2023",
+  "opcao_sigaa": "OUTRAS ATIVIDADES COMPLEMENTARES/(ECL2023) CURSO EXTRACURRICULAR NA ÁREA DE CONCENTRAÇÃO DO CURSO (1.2h)",
+  "ha_abatidas": 24,
+  "teto_ha": 54,
+  "regra_fonte": "Resolução CGRAD 05/23, Anexo III, item 13"
+}
