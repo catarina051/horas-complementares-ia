@@ -55,24 +55,6 @@ def test_limpeza_nao_apaga_assinatura_que_encosta_na_borda():
     assert img.width >= 340 and img.height >= 195
 
 
-def test_detector_converte_coordenadas_e_elimina_caixas_duplicadas():
-    import numpy as np
-    from detector_assinatura import selecionar_caixa
-    logits = np.array([[5., -5.], [4., -4.], [-5., 5.]])
-    caixas = np.array([[.5, .6, .4, .2], [.5, .6, .39, .19], [.1, .1, .1, .1]])
-    caixa, confianca = selecionar_caixa(logits, caixas, (1000, 500))
-    assert caixa == (300, 250, 700, 350)
-    assert confianca > .99
-
-
-def test_detector_recusa_duas_assinaturas_e_ausencia_de_assinatura():
-    import numpy as np
-    from detector_assinatura import selecionar_caixa
-    from assinatura import ErroAssinatura
-    with pytest.raises(ErroAssinatura, match='mais de uma'):
-        selecionar_caixa(np.array([[5., -5.], [5., -5.]]),
-                         np.array([[.2, .2, .2, .1], [.8, .8, .2, .1]]), (1000, 500))
-    assert selecionar_caixa(np.array([[-5., 5.]]), np.array([[.5, .5, .1, .1]]), (1000, 500)) is None
 
 
 def test_limpeza_preserva_pontos_e_acentos_pequenos_proximos_do_traco():
@@ -95,29 +77,9 @@ def test_png_branco_com_cantos_transparentes_nao_e_assinatura():
         app.recortar_assinatura(buf.getvalue())
 
 
-def test_detector_preserva_proporcao_e_reverte_coordenadas_do_preenchimento(monkeypatch):
-    import numpy as np
-    import detector_assinatura as detector
-    class Sessao:
-        def run(self, _nomes, dados):
-            assert dados['pixel_values'].shape == (1, 3, 640, 640)
-            # A foto 4:1 ocupa só a faixa central; os demais pixels são brancos.
-            assert dados['pixel_values'][0, 0, 0, 0] > 2
-            return np.array([[[5., -5.]]]), np.array([[[.5, .5, 1., .25]]])
-    monkeypatch.setattr(detector, '_sessao', lambda: Sessao())
-    _, caixa, _ = detector.localizar_assinatura(Image.new('RGBA', (1000,250), 'black'))
-    assert caixa == (0, 0, 1000, 250)
 
 
-def test_regioes_de_nome_e_sobrenome_alinhadas_formam_uma_assinatura():
-    import numpy as np
-    from detector_assinatura import selecionar_caixa
-    caixa, _ = selecionar_caixa(np.array([[5.,-5.],[5.,-5.]]),
-                                np.array([[.3,.5,.3,.2],[.65,.5,.3,.2]]), (1000,500))
-    assert caixa == (150,200,800,300)
-
-
-def test_png_transparente_validado_nao_perde_trechos_fora_da_caixa_do_detector():
+def test_png_transparente_validado_nao_perde_trechos_do_traco():
     r = app.recortar_assinatura(foto(transparente=True))
     assert r['largura'] >= 350
     assert r['metodo'] == 'processamento_direto'
@@ -125,7 +87,7 @@ def test_png_transparente_validado_nao_perde_trechos_fora_da_caixa_do_detector()
 
 def test_recortar_assinatura_cortada_e_sem_fundo_pelo_usuario():
     # Quando o usuário corta e remove o fundo na interface, o backend recebe o PNG
-    # e preserva a assinatura sem depender de modelo detector.
+    # e preserva a assinatura como está.
     dados = foto(transparente=True)
     r = app.recortar_assinatura(dados)
     assert r['mime_type'] == 'image/png'
@@ -145,13 +107,11 @@ def test_recorte_expande_da_regiao_detectada_para_os_tracos_proximos_no_papel():
     assert 200 <= resultado.height <= 250  # mesa não entra
 
 
-def test_png_com_margem_transparente_remove_papel_da_fotografia(monkeypatch):
-    import detector_assinatura as detector
+def test_png_com_margem_transparente_remove_papel_da_fotografia():
     img = Image.new('RGBA', (1000,1000), (0,0,0,0))
     d = ImageDraw.Draw(img)
     d.rectangle((200,300,599,499), fill=(180,180,180,255))
     d.line([(235,440),(300,330),(310,450),(400,350),(540,420)], fill='black', width=4)
-    monkeypatch.setattr(detector, 'localizar_assinatura', lambda im: (im,(0,0,im.width,im.height),.9))
     buf = BytesIO(); img.save(buf,'PNG')
     r = app.recortar_assinatura(buf.getvalue())
     saida = Image.open(BytesIO(base64.b64decode(r['imagem_base64'])))

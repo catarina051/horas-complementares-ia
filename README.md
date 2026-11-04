@@ -146,8 +146,7 @@ sh scripts/implantar.sh
 Abra o [formulário local](http://localhost:5679/form/horas-complementares?v=20261031).
 Sem chave do Gemini, o sistema entra em modo de demonstração e avisa que a classificação é simulada.
 
-O primeiro build baixa e exporta o detector para ONNX, podendo demorar mais. O script gera, importa
-e publica o workflow com o n8n parado antes de iniciá-lo novamente.
+O script gera, importa e publica o workflow com o n8n parado antes de iniciá-lo novamente.
 
 ### Testar e demonstrar
 
@@ -165,8 +164,8 @@ Não há uma instância pública permanente; o acesso ao piloto depende do compu
   e OCR não garantem anonimização completa. A assinatura e a declaração são processadas localmente.
 - **Retenção:** não há cadastro de alunos. Há arquivos temporários durante o processamento e isso
   não garante ausência de retenção em toda a infraestrutura. Documentos de alunos, `.env`, resultados
-  privados e pesos do detector ficam fora do Git; as amostras e a captura do README são fictícias.
-- **Escopo:** fotos ambíguas podem exigir novo envio. O detector não autentica assinaturas e não
+  privados ficam fora do Git; as amostras e a captura do README são fictícias.
+- **Escopo:** fotos ambíguas podem exigir novo envio. O recorte não autentica assinaturas e não
   produz assinatura digital criptográfica. O sistema não consulta saldo de horas, não envia pedidos ao
   SIGAA e não substitui a Coordenação. As lacunas do catálogo estão em [`regras/`](regras/README.md).
 

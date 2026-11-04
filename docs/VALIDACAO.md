@@ -41,8 +41,8 @@ python -m pytest services/declaracao -q
 ```
 
 Sem Tesseract com o idioma português no host, o teste de OCR é ignorado. Os demais testes cobrem
-rotas HTTP, datas, seleção de regiões do detector e limpeza das imagens. Testes de unidades isoladas
-não substituem a verificação visual do modelo de visão com fotografias diferentes.
+rotas HTTP, datas e a limpeza das imagens de assinatura (incluindo foto sobre mesa de madeira).
+Testes de unidades isoladas não substituem a verificação visual com fotografias diferentes.
 
 ## Avaliação da classificação por LLM
 
@@ -66,7 +66,7 @@ Instruções completas em [`evals/README.md`](../evals/README.md).
 2. **Entrada:** abrir o formulário, selecionar curso/matriz e enviar um certificado fictício.
 3. **Saída:** mostrar código/opção do SIGAA, cálculo, teto, fonte e PDF com declaração antes do certificado.
 4. **Reuso:** mostrar a declaração-base e explicar que os dados e a foto não precisam ser reenviados.
-5. **Decisões:** explicar que o LLM interpreta, o código calcula e o detector de assinatura roda localmente.
+5. **Decisões:** explicar que o LLM interpreta, o código calcula e a assinatura só vai para a IA se o aluno escolher.
 6. **Evidência e limite:** mostrar testes e um caso real validado sem dados pessoais; informar que
    tempo economizado e acurácia em amostra ampla ainda serão medidos no piloto.
 
