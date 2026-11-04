@@ -10,7 +10,17 @@
 
 <div id="editor-assinatura" style="display: none; margin: 16px 0 20px; font-family: system-ui, -apple-system, sans-serif;">
   
-  <!-- Estado 1: Processando com IA (automático ao anexar foto) -->
+  <!-- Estado 0: o aluno ainda não escolheu como preparar a assinatura. Nada é enviado antes disso. -->
+  <div id="escolha-card" style="display: none; padding: 16px 18px; border: 1px solid #d0d7de; border-radius: 12px; background: #fff;">
+    <div style="font-size: 14px; font-weight: 650; color: #1f2328; margin-bottom: 6px;">Como você quer preparar a assinatura?</div>
+    <div style="font-size: 13px; color: #57606a; margin-bottom: 12px; line-height: 1.45;">A foto ainda não foi enviada para lugar nenhum.</div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+      <button type="button" id="btn-escolher-ia" class="hc-btn-purple" style="padding: 8px 14px; background: #6f42c1; color: #fff; border: none; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer;">Com IA (enviar ao Gemini)</button>
+      <button type="button" id="btn-escolher-manual" class="hc-btn-subtle" style="padding: 8px 14px; background: #f6f8fa; color: #24292f; border: 1px solid #d0d7de; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer;">Manual, sem IA</button>
+    </div>
+  </div>
+
+  <!-- Estado 1: Processando com IA (só depois que o aluno escolhe "Com IA") -->
   <div id="ia-loading-card" style="display: none; padding: 22px 20px; background: linear-gradient(135deg, #faf5ff 0%, #f3f4f6 100%); border: 1px solid #d8b4fe; border-radius: 12px; box-shadow: 0 4px 14px rgba(111,66,193,0.07); text-align: center;">
     <div style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: #e9d5ff; color: #6f42c1; margin-bottom: 12px;">
       <span style="display: inline-block; width: 22px; height: 22px; border: 3px solid rgba(111,66,193,0.25); border-top-color: #6f42c1; border-radius: 50%; animation: hc-spin 0.8s linear infinite;"></span>
@@ -19,7 +29,7 @@
       Preparando sua assinatura com IA (Gemini)...
     </div>
     <div style="font-size: 13px; color: #581c87; max-width: 480px; margin: 0 auto; line-height: 1.45;">
-      Localizando os traços manuscritos, recortando a área útil e removendo o fundo da folha automaticamente.
+      A foto foi enviada ao Google Gemini para localizar a assinatura. O recorte e a remoção do fundo são feitos no servidor desta ferramenta, e nada fica guardado.
     </div>
   </div>
 
@@ -63,7 +73,7 @@
       <div>
         <strong style="color: #24292f; font-size: 13px;">✂️ Ajuste Manual da Assinatura</strong>
         <p style="margin: 2px 0 0; color: #57606a; font-size: 12px;">
-          Selecione o retângulo em volta da sua assinatura e clique em <b>Cortar Seleção</b>.
+          Selecione o retângulo em volta da sua assinatura e clique em <b>Cortar Seleção</b>. Tudo acontece no seu navegador: a foto não é enviada a nenhuma IA.
         </p>
       </div>
       <button type="button" id="btn-close-manual" style="background: none; border: none; font-size: 18px; color: #57606a; cursor: pointer; padding: 0 4px;">&times;</button>
@@ -89,7 +99,7 @@
           ↺ Restaurar Foto
         </button>
         <button type="button" id="btn-ia-retry" class="hc-btn-purple" style="padding: 7px 14px; background: #6f42c1; color: #fff; border: 1px solid rgba(27,31,36,0.15); border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
-          <span>🤖 Tentar com IA</span>
+          <span>🤖 Tentar com IA (envia ao Gemini)</span>
         </button>
       </div>
 
@@ -130,10 +140,31 @@
     const cropCanvas = document.getElementById('crop-canvas');
     const previewImg = document.getElementById('ia-preview-img');
     const manualAlert = document.getElementById('manual-alert-msg');
+    const escolhaCard = document.getElementById('escolha-card');
+    // A prévia com IA passa pelo n8n (mesmo endereço do formulário), nunca direto pelo serviço.
+    const URL_PREVIA_IA = new URL('/webhook/assinatura-ia', window.location.href).toString();
+
+    // O consentimento é o campo "Preparo da assinatura" do formulário (rádio renderizado como checkbox).
+    function opcaoPreparo(prefixo) {
+      return Array.from(document.querySelectorAll('input.multiselect-checkbox'))
+        .find(function(el) { return (el.value || '').indexOf(prefixo) === 0; });
+    }
+    function escolhaAtual() {
+      const ia = opcaoPreparo('Com IA');
+      const manual = opcaoPreparo('Manual');
+      if (ia && ia.checked) return 'ia';
+      if (manual && manual.checked) return 'manual';
+      return null;
+    }
+    function marcar(tipo) {
+      const el = opcaoPreparo(tipo === 'ia' ? 'Com IA' : 'Manual');
+      if (el && !el.checked) el.click();
+    }
 
     if (!editor || !cropCanvas) return;
 
     let originalImg = null;
+    let originalFile = null;
     let croppedImgData = null;
     let isSelecting = false;
     let startX = 0, startY = 0, endX = 0, endY = 0;
@@ -146,27 +177,63 @@
       if (!file) return;
       if (file.name === 'assinatura_preparada.png') return;
 
+      originalFile = file;
       const reader = new FileReader();
       reader.onload = function(evt) {
         originalImg = new Image();
         originalImg.onload = function() {
-          // Mostra o editor e inicia o processamento automático por IA
           editor.style.display = 'block';
-          executarProcessamentoIA(file);
+          decidir();
         };
         originalImg.src = evt.target.result;
       };
       reader.readAsDataURL(file);
     });
 
-    // Função que aciona a IA automaticamente
+    // Só segue o caminho que o aluno escolheu; sem escolha, pergunta e não envia nada.
+    function decidir() {
+      if (!originalImg) return;
+      escolhaCard.style.display = 'none';
+      const tipo = escolhaAtual();
+      if (tipo === 'ia') {
+        executarProcessamentoIA(originalFile);
+      } else if (tipo === 'manual') {
+        loadingCard.style.display = 'none';
+        successCard.style.display = 'none';
+        abrirModoManual('Recorte manual: a foto fica só no seu navegador e não é enviada a nenhuma IA.');
+      } else {
+        loadingCard.style.display = 'none';
+        successCard.style.display = 'none';
+        manualCard.style.display = 'none';
+        escolhaCard.style.display = 'block';
+      }
+    }
+
+    // Marcar a opção dispara o "change" abaixo, que chama decidir(); a checagem final cobre o caso
+    // de o formulário não emitir o evento.
+    function escolherPeloCartao(tipo) {
+      marcar(tipo);
+      setTimeout(function() { if (escolhaCard.style.display !== 'none') decidir(); }, 0);
+    }
+    document.getElementById('btn-escolher-ia').addEventListener('click', function() { escolherPeloCartao('ia'); });
+    document.getElementById('btn-escolher-manual').addEventListener('click', function() { escolherPeloCartao('manual'); });
+    // Trocar a escolha depois de anexar a foto refaz o preparo pelo novo caminho.
+    ['Com IA', 'Manual'].forEach(function(prefixo) {
+      const el = opcaoPreparo(prefixo);
+      if (el) el.addEventListener('change', function() {
+        if (originalImg && el.checked) setTimeout(decidir, 0);
+      });
+    });
+
+    // Envia a foto para o recorte com IA. Só é chamada com a opção "Com IA" marcada.
     async function executarProcessamentoIA(fileObj) {
+      if (escolhaAtual() !== 'ia') return;
       loadingCard.style.display = 'block';
       successCard.style.display = 'none';
       manualCard.style.display = 'none';
 
       try {
-        const resp = await fetch('http://localhost:8000/assinatura-ia', {
+        const resp = await fetch(URL_PREVIA_IA, {
           method: 'POST',
           headers: { 'Content-Type': fileObj.type || 'image/jpeg' },
           body: fileObj
@@ -247,13 +314,9 @@
 
     document.getElementById('btn-ia-retry').addEventListener('click', function() {
       if (!originalImg) return;
-      const tempC = document.createElement('canvas');
-      tempC.width = originalImg.naturalWidth;
-      tempC.height = originalImg.naturalHeight;
-      tempC.getContext('2d').drawImage(originalImg, 0, 0);
-      tempC.toBlob(function(blob) {
-        executarProcessamentoIA(blob);
-      }, 'image/jpeg', 0.9);
+      // Tentar com IA é escolher "Com IA": marcar a opção já dispara o envio pelo "change".
+      if (escolhaAtual() !== 'ia') { marcar('ia'); return; }
+      executarProcessamentoIA(originalFile);
     });
 
     // --- Lógica do Canvas de Recorte Manual ---

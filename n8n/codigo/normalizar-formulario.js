@@ -10,6 +10,7 @@ const ROTULOS = {
   matricula: 'Matrícula',
   rg: 'RG',
   cpf: 'CPF',
+  preparo: 'Preparo da assinatura',
   assinatura: 'Foto da assinatura (JPG ou PNG)',
   declaracao_base: 'Declaração-base (PDF)',
 };
@@ -38,6 +39,8 @@ const saida = {
   nome: texto('nome').replace(/\s+/g, ' '),
   matricula: texto('matricula'),
   rg: texto('rg'),
+  // Consentimento explícito: a foto só vai para o Gemini se o aluno escolheu "Com IA".
+  assinatura_ia: texto('preparo').startsWith('Com IA'),
   cpf: texto('cpf'),
   erro: '',
 };
@@ -52,6 +55,7 @@ if (modo === 'primeiro_uso') {
   if (!saida.rg) faltando.push('o RG');
   if (!saida.cpf) faltando.push('o CPF');
   if (!arquivos.assinatura) faltando.push('a foto da assinatura');
+  if (!texto('preparo')) faltando.push('a escolha de como preparar a assinatura (com IA ou manual)');
 } else if (!arquivos.declaracao_base) {
   faltando.push('a sua declaração-base (PDF que a ferramenta gerou no primeiro uso)');
 }

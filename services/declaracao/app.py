@@ -285,8 +285,10 @@ class Handler(BaseHTTPRequestHandler):
             self._json(422, {'erro': str(e)})
 
     def log_message(self, formato: str, *args) -> None:
-        # Só método, rota e status; nunca o conteúdo.
-        print(f'{self.command} {urlparse(self.path).path} {args[1] if len(args) > 1 else ""}', flush=True)
+        # Só método, rota, modo do recorte e status; nunca o conteúdo nem dados do aluno.
+        url = urlparse(self.path)
+        modo = ' (IA)' if url.path == '/assinatura-ia' or 'modo=ia' in url.query else ''
+        print(f'{self.command} {url.path}{modo} {args[1] if len(args) > 1 else ""}', flush=True)
 
 
 if __name__ == '__main__':

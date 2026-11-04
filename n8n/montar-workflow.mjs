@@ -60,7 +60,17 @@ function liga(origem, destino, saida = 0) {
 }
 
 // ---- Gatilhos ---------------------------------------------------------------
-const PRIVACIDADE = 'Entendo que meus dados servem só para gerar a declaração e não ficam guardados, e que o texto do certificado vai para a IA sem nome, matrícula, RG e CPF.';
+const PRIVACIDADE = 'Entendo que meus dados servem só para gerar a declaração e não ficam guardados, que o texto do certificado vai para a IA sem nome, matrícula, RG e CPF, e que a foto da assinatura só vai para a IA se eu escolher a opção com IA.';
+// Opções do preparo da assinatura: o editor (templates/editor-assinatura.html) e o normalizador
+// reconhecem cada uma pelo começo do texto ("Com IA" / "Manual").
+const ASSINATURA_IA = 'Com IA (Gemini): recorte automático. A foto da assinatura é enviada ao Google.';
+const ASSINATURA_MANUAL = 'Manual, sem IA: eu recorto aqui. A foto da assinatura não vai para nenhum modelo de IA.';
+const AVISO_ASSINATURA = `<div style="margin:4px 0 12px;padding:12px 14px;border:1px solid #d0d7de;border-left:4px solid #0969da;border-radius:6px;background:#f6f8fa;font-size:13px;line-height:1.5;color:#1f2328">
+<strong>Sua assinatura e a IA</strong><br>
+<b>Com IA:</b> a foto é enviada ao Google Gemini só para localizar e recortar a assinatura. A chave usada é do plano gratuito, e nesse plano o Google pode usar o conteúdo enviado para melhorar os produtos dele.<br>
+<b>Manual:</b> você recorta e remove o fundo aqui na página. A foto não é enviada a nenhuma IA; ela só chega ao servidor desta ferramenta para montar o PDF.<br>
+Nos dois casos nada fica guardado: os arquivos são descartados ao fim do processamento, e o histórico de execuções não é salvo.
+</div>`;
 // Versão 2.1: a partir da 2.2 o Form Trigger não aceita o nó Respond to Webhook, que é o que
 // permite devolver a página de resultado com os dois downloads.
 no('Formulário', 'n8n-nodes-base.formTrigger', 2.1, [0, 0], {
@@ -91,6 +101,11 @@ no('Formulário', 'n8n-nodes-base.formTrigger', 2.1, [0, 0], {
       { fieldLabel: 'Matrícula', fieldType: 'text', placeholder: 'Só números' },
       { fieldLabel: 'RG', fieldType: 'text' },
       { fieldLabel: 'CPF', fieldType: 'text', placeholder: '000.000.000-00' },
+      { fieldType: 'html', html: AVISO_ASSINATURA },
+      {
+        fieldLabel: 'Preparo da assinatura', fieldType: 'radio',
+        fieldOptions: { values: [{ option: ASSINATURA_IA }, { option: ASSINATURA_MANUAL }] },
+      },
       { fieldLabel: 'Foto da assinatura (JPG ou PNG)', fieldType: 'file', acceptFileTypes: '.jpg,.jpeg,.png', multipleFiles: false },
       { fieldType: 'html', html: editorAssinaturaHtml },
       { fieldType: 'html', html: '<p><strong>Já tenho a declaração-base:</strong> envie o PDF que a ferramenta gerou no seu primeiro uso. Só a data muda.</p>' },
@@ -102,6 +117,15 @@ no('Formulário', 'n8n-nodes-base.formTrigger', 2.1, [0, 0], {
   options: { appendAttribution: false, buttonLabel: 'Gerar meu PDF' },
 }, { webhookId: '6f1c2a90-5b1e-4c39-9a52-0d0c00000001' });
 
+// Prévia do recorte com IA no editor do formulário. Só é chamada depois que o aluno escolhe
+// "Com IA". Passa pelo n8n (e não direto pelo serviço) para funcionar também pelo link público.
+no('API assinatura IA', 'n8n-nodes-base.webhook', 2.1, [0, -600], {
+  httpMethod: 'POST', path: 'assinatura-ia', responseMode: 'responseNode',
+  options: { rawBody: true, allowedOrigins: '*' },
+}, { webhookId: '6f1c2a90-5b1e-4c39-9a52-0d0c00000003' });
+postPdf('Recortar com IA (prévia)', [220, -600], 'http://declaracao:8000/assinatura-ia', 'data');
+code('Resposta da prévia', 'resposta-previa-assinatura', [440, -600]);
+
 no('API classificar', 'n8n-nodes-base.webhook', 2.1, [0, 320], {
   httpMethod: 'POST', path: 'classificar', responseMode: 'responseNode', options: {},
 }, { webhookId: '6f1c2a90-5b1e-4c39-9a52-0d0c00000002' });
@@ -112,7 +136,8 @@ code('Normalizar API', 'normalizar-api', [220, 320]);
 se('Entrada ok?', [440, 160], semErro);
 se('Precisa de declaração?', [660, 100], igual('origem', 'formulario'));
 se('Primeiro uso?', [880, 0], igual('modo', 'primeiro_uso'));
-postPdf('Recortar assinatura', [880, -360], 'http://declaracao:8000/assinatura?modo=ia', 'assinatura');
+// Só usa o Gemini se o aluno escolheu "Com IA"; no modo manual o recorte é local.
+postPdf('Recortar assinatura', [880, -360], "={{ 'http://declaracao:8000/assinatura' + ($json.assinatura_ia ? '?modo=ia' : '') }}", 'assinatura');
 code('Preparar assinatura', 'preparar-assinatura', [1100, -360]);
 se('Assinatura ok?', [1320, -360], semErro);
 code('Montar declaração', 'montar-declaracao', [1100, -120]);
@@ -165,6 +190,9 @@ no('Responder', 'n8n-nodes-base.respondToWebhook', 1.4, [5060, 220], {
 });
 
 // ---- Ligações ---------------------------------------------------------------
+liga('API assinatura IA', 'Recortar com IA (prévia)');
+liga('Recortar com IA (prévia)', 'Resposta da prévia');
+liga('Resposta da prévia', 'Responder');
 liga('Formulário', 'Normalizar formulário');
 liga('API classificar', 'Normalizar API');
 liga('Normalizar formulário', 'Entrada ok?');

@@ -30,6 +30,10 @@ services:
       - ./regras:/data/regras:ro
       - ./templates:/data/templates:ro
       - ./workflows:/data/workflows:ro
+      # Patch de UMA linha no n8n 2.45.7: não sanitizar o HTML dos campos "html" do formulário, para o
+      # editor de assinatura (templates/editor-assinatura.html, conteúdo nosso) rodar. É cópia do arquivo
+      # dessa versão: ao trocar a imagem acima, refaça o patch (tests/patch-n8n.test.mjs e
+      # scripts/implantar.sh barram versões diferentes).
       - ./n8n/patches/utils.js:/usr/local/lib/node_modules/n8n/node_modules/n8n-nodes-base/dist/nodes/Form/utils/utils.js:ro
     depends_on:
       gotenberg:
@@ -46,9 +50,10 @@ services:
   declaracao:
     build: ./services/declaracao
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:8000:8000"
+    # Sem porta publicada: só o n8n fala com este serviço, pela rede interna do compose.
+    # A prévia do recorte com IA chega pelo webhook /webhook/assinatura-ia do n8n.
     environment:
+      # Usada só quando o aluno escolhe preparar a assinatura com IA.
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
     expose:
