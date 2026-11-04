@@ -161,7 +161,11 @@ Não há uma instância pública permanente; o acesso ao piloto depende do compu
 
 - **Dados:** o histórico do n8n não é persistido e o serviço Python não registra o corpo das
   requisições. Nome informado, matrícula, RG, CPF e e-mails são mascarados antes do Gemini; padrões
-  e OCR não garantem anonimização completa. A assinatura e a declaração são processadas localmente.
+  e OCR não garantem anonimização completa. A declaração é montada no servidor da ferramenta.
+- **Assinatura:** o aluno escolhe. *Com IA*, a foto vai ao Gemini (plano gratuito, em que o Google
+  pode usar o conteúdo para melhorar seus produtos) só para localizar a assinatura; o recorte e a
+  remoção do fundo são locais. *Manual*, o aluno recorta no navegador e a foto não vai a nenhuma IA.
+  O formulário explica as duas opções antes do envio, e nada é enviado antes da escolha.
 - **Retenção:** não há cadastro de alunos. Há arquivos temporários durante o processamento e isso
   não garante ausência de retenção em toda a infraestrutura. Documentos de alunos, `.env`, resultados
   privados ficam fora do Git; as amostras e a captura do README são fictícias.
