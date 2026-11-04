@@ -1,0 +1,39 @@
+# Proxy público da ferramenta (produção). Só o formulário e a prévia do recorte com IA passam;
+# o editor do n8n, a API /rest e o /webhook/classificar (avaliação, sem autenticação) ficam em 404.
+{$DOMINIO} {
+  encode zstd gzip
+  request_body {
+    max_size 30MB
+  }
+  header {
+    Strict-Transport-Security "max-age=31536000"
+    X-Content-Type-Options nosniff
+    Referrer-Policy no-referrer
+    X-Robots-Tag "noindex, nofollow"
+    -Server
+  }
+  @inicio path /
+  redir @inicio /form/horas-complementares 302
+
+  @formulario path /form/horas-complementares /form/horas-complementares/* /form-waiting/* /assets/* /static/* /favicon.ico
+  handle @formulario {
+    reverse_proxy n8n:5678
+  }
+
+  # Prévia do recorte com IA: só depois que o aluno escolhe "Com IA" no formulário.
+  # Passa pelo n8n; o serviço Python não fica exposto.
+  @assinatura_ia {
+    path /webhook/assinatura-ia
+    method POST OPTIONS
+  }
+  handle @assinatura_ia {
+    request_body {
+      max_size 10MB
+    }
+    reverse_proxy n8n:5678
+  }
+
+  handle {
+    respond "Nao encontrado" 404
+  }
+}

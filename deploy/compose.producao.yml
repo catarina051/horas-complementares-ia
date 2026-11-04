@@ -1,0 +1,30 @@
+# Acréscimos de produção ao docker-compose.yml: HTTPS pelo Caddy e o n8n atrás de um proxy.
+#   docker compose -f docker-compose.yml -f deploy/compose.producao.yml up -d
+# DOMINIO vem do .env da VM (ex.: horas-3-141-45-28.sslip.io).
+services:
+  n8n:
+    environment:
+      N8N_PROXY_HOPS: "1"
+      N8N_SECURE_COOKIE: "true"
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      NODE_OPTIONS: --max-old-space-size=768
+  caddy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+    environment:
+      DOMINIO: ${DOMINIO:?defina DOMINIO no .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - n8n
+volumes:
+  caddy_data:
+  caddy_config:
