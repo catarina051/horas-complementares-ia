@@ -1,0 +1,532 @@
+<style>
+@keyframes hc-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.hc-btn-primary:hover { background: #1a7f37 !important; }
+.hc-btn-subtle:hover { background: #f3f4f6 !important; border-color: #bbc0c5 !important; }
+.hc-btn-purple:hover { background: #5a32a3 !important; }
+</style>
+
+<div id="editor-assinatura" style="display: none; margin: 16px 0 20px; font-family: system-ui, -apple-system, sans-serif;">
+  
+  <!-- Estado 1: Processando com IA (automático ao anexar foto) -->
+  <div id="ia-loading-card" style="display: none; padding: 22px 20px; background: linear-gradient(135deg, #faf5ff 0%, #f3f4f6 100%); border: 1px solid #d8b4fe; border-radius: 12px; box-shadow: 0 4px 14px rgba(111,66,193,0.07); text-align: center;">
+    <div style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: #e9d5ff; color: #6f42c1; margin-bottom: 12px;">
+      <span style="display: inline-block; width: 22px; height: 22px; border: 3px solid rgba(111,66,193,0.25); border-top-color: #6f42c1; border-radius: 50%; animation: hc-spin 0.8s linear infinite;"></span>
+    </div>
+    <div style="font-size: 15px; font-weight: 650; color: #4a1d96; margin-bottom: 4px;">
+      Preparando sua assinatura com IA (Gemini)...
+    </div>
+    <div style="font-size: 13px; color: #581c87; max-width: 480px; margin: 0 auto; line-height: 1.45;">
+      Localizando os traços manuscritos, recortando a área útil e removendo o fundo da folha automaticamente.
+    </div>
+  </div>
+
+  <!-- Estado 2: Sucesso da IA com Card de Pré-visualização Elegante -->
+  <div id="ia-success-card" style="display: none; border: 1px solid #c8e1cf; border-radius: 12px; background: #ffffff; box-shadow: 0 4px 16px rgba(0,0,0,0.05); overflow: hidden;">
+    <div style="padding: 12px 18px; background: #f6fbf7; border-bottom: 1px solid #e2f0e6; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #2da44e; color: #fff; font-size: 13px; font-weight: bold;">✓</span>
+        <span style="font-size: 14px; font-weight: 650; color: #1a7f37;">Assinatura preparada com sucesso</span>
+      </div>
+      <span style="font-size: 11px; font-weight: 600; color: #6f42c1; background: #f3e8ff; border: 1px solid #e9d5ff; padding: 3px 9px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px;">
+        <span>✨ IA Gemini</span>
+      </span>
+    </div>
+
+    <!-- Área de visualização da assinatura com quadriculado suave -->
+    <div style="padding: 20px; text-align: center; background: #fafbfc;">
+      <div style="font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #656d76; margin-bottom: 10px; font-weight: 600;">
+        Fundo transparente · Isolada para a declaração
+      </div>
+      <div style="display: inline-block; max-width: 100%; padding: 14px 24px; border-radius: 8px; border: 1px solid #d0d7de; background-image: linear-gradient(45deg, #eee 25%, transparent 25%), linear-gradient(-45deg, #eee 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #eee 75%), linear-gradient(-45deg, transparent 75%, #eee 75%); background-size: 16px 16px; background-position: 0 0, 0 8px, 8px -8px, -8px 0px; background-color: #fff;">
+        <img id="ia-preview-img" alt="Assinatura recortada" style="display: block; max-height: 95px; max-width: 100%; height: auto; margin: 0 auto;" />
+      </div>
+    </div>
+
+    <div style="padding: 12px 18px; background: #ffffff; border-top: 1px solid #eaeef2; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <div style="font-size: 13px; color: #1a7f37; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+        <span>✓ Anexada automaticamente ao documento</span>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" id="btn-toggle-manual" class="hc-btn-subtle" style="padding: 7px 14px; background: #f6f8fa; color: #24292f; border: 1px solid #d0d7de; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+          <span>✏️ Ajustar manualmente</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado 3: Editor Manual (disponível caso a IA falhe ou usuário queira ajustar) -->
+  <div id="manual-editor-card" style="display: none; border: 1px solid #d0d7de; border-radius: 12px; background: #ffffff; box-shadow: 0 4px 16px rgba(0,0,0,0.05); overflow: hidden; margin-top: 12px;">
+    <div style="padding: 12px 18px; background: #f6f8fa; border-bottom: 1px solid #d0d7de; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <strong style="color: #24292f; font-size: 13px;">✂️ Ajuste Manual da Assinatura</strong>
+        <p style="margin: 2px 0 0; color: #57606a; font-size: 12px;">
+          Selecione o retângulo em volta da sua assinatura e clique em <b>Cortar Seleção</b>.
+        </p>
+      </div>
+      <button type="button" id="btn-close-manual" style="background: none; border: none; font-size: 18px; color: #57606a; cursor: pointer; padding: 0 4px;">&times;</button>
+    </div>
+
+    <div style="padding: 16px;">
+      <div id="manual-alert-msg" style="display: none; margin-bottom: 12px; padding: 10px 14px; background: #fff8c5; border: 1px solid #d4a72c; border-radius: 6px; font-size: 13px; color: #7d4e00;"></div>
+
+      <div style="position: relative; text-align: center; margin-bottom: 12px; background: #eaeef2; border-radius: 6px; padding: 8px; overflow: hidden;">
+        <div style="position: relative; display: inline-block; max-width: 100%;">
+          <canvas id="crop-canvas" style="display: block; max-width: 100%; height: auto; border: 1px solid #d0d7de; border-radius: 4px; cursor: crosshair;"></canvas>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px;">
+        <button type="button" id="btn-crop" style="padding: 7px 14px; background: #2da44e; color: #fff; border: 1px solid rgba(27,31,36,0.15); border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer;">
+          ✂️ Cortar Seleção
+        </button>
+        <button type="button" id="btn-remove-bg" style="padding: 7px 14px; background: #0969da; color: #fff; border: 1px solid rgba(27,31,36,0.15); border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer;">
+          ✨ Remover Fundo Branco
+        </button>
+        <button type="button" id="btn-reset-crop" class="hc-btn-subtle" style="padding: 7px 14px; background: #fff; color: #24292f; border: 1px solid #d0d7de; border-radius: 6px; font-weight: 500; font-size: 13px; cursor: pointer;">
+          ↺ Restaurar Foto
+        </button>
+        <button type="button" id="btn-ia-retry" class="hc-btn-purple" style="padding: 7px 14px; background: #6f42c1; color: #fff; border: 1px solid rgba(27,31,36,0.15); border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+          <span>🤖 Tentar com IA</span>
+        </button>
+      </div>
+
+      <div id="bg-slider-container" style="display: none; margin-bottom: 14px; padding: 10px 14px; background: #f6f8fa; border: 1px solid #e1e4e8; border-radius: 6px; font-size: 12px; color: #57606a;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span>Sensibilidade da remoção de fundo:</span>
+          <span id="bg-threshold-val" style="font-weight: 600; color: #24292f;">35</span>
+        </div>
+        <input type="range" id="bg-threshold" min="10" max="80" value="35" style="width: 100%; cursor: pointer;" />
+      </div>
+
+      <div id="preview-box" style="display: none; margin-bottom: 14px; padding: 12px; background: #fff; border: 1px solid #d0d7de; border-radius: 8px;">
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #57606a; margin-bottom: 8px; font-weight: 600;">
+          Resultado Manual (fundo transparente):
+        </div>
+        <div style="background-image: linear-gradient(45deg, #eee 25%, transparent 25%), linear-gradient(-45deg, #eee 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #eee 75%), linear-gradient(-45deg, transparent 75%, #eee 75%); background-size: 16px 16px; background-position: 0 0, 0 8px, 8px -8px, -8px 0px; background-color: #fff; padding: 14px; border-radius: 6px; text-align: center;">
+          <canvas id="final-preview-canvas" style="max-height: 90px; max-width: 100%; height: auto; display: inline-block; vertical-align: middle;"></canvas>
+        </div>
+      </div>
+
+      <button type="button" id="btn-confirm-sig" class="hc-btn-primary" style="width: 100%; padding: 10px 16px; background: #2da44e; color: #fff; border: none; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; transition: background 0.2s;">
+        ✓ Concluir e Anexar Assinatura Manual
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  function preencherDadosMokados() {
+    const dados = {
+      'Nome completo': 'Catarina Gonçalves',
+      'Matrícula': '2023100123',
+      'RG': 'MG-12.345.678',
+      'CPF': '123.456.789-00'
+    };
+
+    document.querySelectorAll('.form-group').forEach(function(group) {
+      const label = group.querySelector('.form-label');
+      const input = group.querySelector('.form-input[type="text"]');
+      if (label && input && !input.value) {
+        const txt = label.textContent.replace(/\s*\*/g, '').trim();
+        if (dados[txt]) {
+          input.value = dados[txt];
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+    });
+
+    const cursoBox = document.querySelector('#option0_field-0, input.multiselect-checkbox[id*="field-0"][value*="Computação"]');
+    if (cursoBox && !document.querySelector('#field-0 input:checked')) {
+      cursoBox.checked = true;
+      cursoBox.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    const ingressoBox = document.querySelector('input.multiselect-checkbox[id*="field-1"][value*="MIGREI"], input.multiselect-checkbox[id*="field-1"][value*="2023.1"], #option0_field-1');
+    if (ingressoBox && !document.querySelector('#field-1 input:checked')) {
+      ingressoBox.checked = true;
+      ingressoBox.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    const modoBox = document.querySelector('#option0_field-4, input.multiselect-checkbox[id*="field-4"][value^="Primeira"]');
+    if (modoBox && !document.querySelector('#field-4 input:checked')) {
+      modoBox.checked = true;
+      modoBox.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    const privBox = document.querySelector('#option0_field-14, input.multiselect-checkbox[id*="field-14"], input.multiselect-checkbox[value^="Entendo"]');
+    if (privBox && !privBox.checked) {
+      privBox.checked = true;
+      privBox.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    document.querySelectorAll('.error-visible').forEach(function(el) {
+      el.classList.remove('error-visible');
+      el.classList.add('error-hidden');
+    });
+
+    if (!document.getElementById('aviso-mock-teste')) {
+      const banner = document.createElement('div');
+      banner.id = 'aviso-mock-teste';
+      banner.style.cssText = 'margin: 0 0 16px; padding: 10px 14px; background: #e7f5ff; border: 1px solid #74c0fc; border-radius: 6px; font-size: 13px; color: #1864ab; display: flex; align-items: center; justify-content: space-between; text-align: left;';
+      banner.innerHTML = '<span>⚡ <b>Dados mockados para testes:</b> Nome, Matrícula, RG, CPF, Curso, Ingresso e Privacidade foram pré-preenchidos. Basta você anexar os arquivos!</span>';
+      
+      const formContainer = document.querySelector('#n8n-form') || document.querySelector('.container');
+      if (formContainer) {
+        formContainer.insertBefore(banner, formContainer.firstChild);
+      }
+    }
+  }
+
+  function initSignatureEditor() {
+    const sigInput = document.querySelector('input[type="file"][accept*=".png"], input[type="file"][accept*=".jpg"]');
+    if (!sigInput) return;
+
+    const editor = document.getElementById('editor-assinatura');
+    const loadingCard = document.getElementById('ia-loading-card');
+    const successCard = document.getElementById('ia-success-card');
+    const manualCard = document.getElementById('manual-editor-card');
+    const cropCanvas = document.getElementById('crop-canvas');
+    const previewImg = document.getElementById('ia-preview-img');
+    const manualAlert = document.getElementById('manual-alert-msg');
+
+    if (!editor || !cropCanvas) return;
+
+    let originalImg = null;
+    let croppedImgData = null;
+    let isSelecting = false;
+    let startX = 0, startY = 0, endX = 0, endY = 0;
+    let hasCropSelection = false;
+    let isBgRemoved = false;
+
+    // Quando o usuário seleciona uma foto de assinatura:
+    sigInput.addEventListener('change', function(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (file.name === 'assinatura_preparada.png') return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        originalImg = new Image();
+        originalImg.onload = function() {
+          // Mostra o editor e inicia o processamento automático por IA
+          editor.style.display = 'block';
+          executarProcessamentoIA(file);
+        };
+        originalImg.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Função que aciona a IA automaticamente
+    async function executarProcessamentoIA(fileObj) {
+      loadingCard.style.display = 'block';
+      successCard.style.display = 'none';
+      manualCard.style.display = 'none';
+
+      try {
+        const resp = await fetch('http://localhost:8000/assinatura-ia', {
+          method: 'POST',
+          headers: { 'Content-Type': fileObj.type || 'image/jpeg' },
+          body: fileObj
+        });
+        const data = await resp.json();
+        if (!resp.ok || data.erro || !data.imagem_base64) {
+          throw new Error(data.erro || 'Não foi possível isolar a assinatura automaticamente.');
+        }
+
+        // Sucesso na IA: mostra a pré-visualização limpa
+        const base64Src = 'data:image/png;base64,' + data.imagem_base64;
+        previewImg.src = base64Src;
+
+        // Atualiza sigInput com o PNG transparente gerado pela IA
+        const bstr = atob(data.imagem_base64);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) u8arr[n] = bstr.charCodeAt(n);
+        const pngBlob = new Blob([u8arr], { type: 'image/png' });
+
+        const filePrepared = new File([pngBlob], 'assinatura_preparada.png', { type: 'image/png' });
+        const dt = new DataTransfer();
+        dt.items.add(filePrepared);
+        sigInput.files = dt.files;
+
+        // Exibe o card de sucesso e oculta o loading
+        loadingCard.style.display = 'none';
+        successCard.style.display = 'block';
+
+        // Prepara também o canvas manual caso o usuário queira abrir para ajustes
+        prepararCanvasComImagem(originalImg);
+
+      } catch (err) {
+        // Se a IA não conseguir ou houver erro, abre o modo manual suavemente
+        loadingCard.style.display = 'none';
+        successCard.style.display = 'none';
+        abrirModoManual('ℹ️ A detecção automática da IA não identificou com certeza a área. Você pode selecionar a assinatura no retângulo abaixo e clicar em <b>Cortar Seleção</b>:');
+      }
+    }
+
+    function abrirModoManual(avisoTexto) {
+      manualCard.style.display = 'block';
+      if (avisoTexto) {
+        manualAlert.style.display = 'block';
+        manualAlert.innerHTML = avisoTexto;
+      } else {
+        manualAlert.style.display = 'none';
+      }
+      prepararCanvasComImagem(originalImg);
+    }
+
+    function prepararCanvasComImagem(img) {
+      if (!img) return;
+      cropCanvas.width = img.naturalWidth;
+      cropCanvas.height = img.naturalHeight;
+      const ctx = cropCanvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      croppedImgData = ctx.getImageData(0, 0, cropCanvas.width, cropCanvas.height);
+      hasCropSelection = false;
+      isBgRemoved = false;
+      document.getElementById('bg-slider-container').style.display = 'none';
+      document.getElementById('preview-box').style.display = 'none';
+      drawCanvasWithOverlay();
+    }
+
+    // Botões de alternância
+    document.getElementById('btn-toggle-manual').addEventListener('click', function() {
+      if (manualCard.style.display === 'none' || !manualCard.style.display) {
+        abrirModoManual();
+      } else {
+        manualCard.style.display = 'none';
+      }
+    });
+
+    document.getElementById('btn-close-manual').addEventListener('click', function() {
+      manualCard.style.display = 'none';
+    });
+
+    document.getElementById('btn-ia-retry').addEventListener('click', function() {
+      if (!originalImg) return;
+      const tempC = document.createElement('canvas');
+      tempC.width = originalImg.naturalWidth;
+      tempC.height = originalImg.naturalHeight;
+      tempC.getContext('2d').drawImage(originalImg, 0, 0);
+      tempC.toBlob(function(blob) {
+        executarProcessamentoIA(blob);
+      }, 'image/jpeg', 0.9);
+    });
+
+    // --- Lógica do Canvas de Recorte Manual ---
+    function drawCanvasWithOverlay() {
+      const ctx = cropCanvas.getContext('2d');
+      ctx.putImageData(croppedImgData, 0, 0);
+
+      if (hasCropSelection) {
+        const x = Math.min(startX, endX);
+        const y = Math.min(startY, endY);
+        const w = Math.abs(endX - startX);
+        const h = Math.abs(endY - startY);
+
+        if (w > 5 && h > 5) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+          ctx.fillRect(0, 0, cropCanvas.width, y);
+          ctx.fillRect(0, y + h, cropCanvas.width, cropCanvas.height - (y + h));
+          ctx.fillRect(0, y, x, h);
+          ctx.fillRect(x + w, y, cropCanvas.width - (x + w), h);
+
+          ctx.strokeStyle = '#0969da';
+          ctx.lineWidth = Math.max(2, Math.round(cropCanvas.width / 300));
+          ctx.setLineDash([6, 6]);
+          ctx.strokeRect(x, y, w, h);
+          ctx.setLineDash([]);
+        }
+      }
+    }
+
+    function getCanvasCoords(e) {
+      const rect = cropCanvas.getBoundingClientRect();
+      const scaleX = cropCanvas.width / rect.width;
+      const scaleY = cropCanvas.height / rect.height;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: Math.max(0, Math.min(cropCanvas.width, (clientX - rect.left) * scaleX)),
+        y: Math.max(0, Math.min(cropCanvas.height, (clientY - rect.top) * scaleY))
+      };
+    }
+
+    cropCanvas.addEventListener('mousedown', function(e) {
+      isSelecting = true;
+      const pt = getCanvasCoords(e);
+      startX = pt.x; startY = pt.y;
+      endX = pt.x; endY = pt.y;
+      hasCropSelection = true;
+    });
+
+    window.addEventListener('mousemove', function(e) {
+      if (!isSelecting) return;
+      const pt = getCanvasCoords(e);
+      endX = pt.x; endY = pt.y;
+      drawCanvasWithOverlay();
+    });
+
+    window.addEventListener('mouseup', function() {
+      if (isSelecting) {
+        isSelecting = false;
+        const w = Math.abs(endX - startX);
+        const h = Math.abs(endY - startY);
+        if (w < 10 || h < 10) hasCropSelection = false;
+        drawCanvasWithOverlay();
+      }
+    });
+
+    cropCanvas.addEventListener('touchstart', function(e) {
+      isSelecting = true;
+      const pt = getCanvasCoords(e);
+      startX = pt.x; startY = pt.y;
+      endX = pt.x; endY = pt.y;
+      hasCropSelection = true;
+      e.preventDefault();
+    }, { passive: false });
+
+    cropCanvas.addEventListener('touchmove', function(e) {
+      if (!isSelecting) return;
+      const pt = getCanvasCoords(e);
+      endX = pt.x; endY = pt.y;
+      drawCanvasWithOverlay();
+      e.preventDefault();
+    }, { passive: false });
+
+    cropCanvas.addEventListener('touchend', function() {
+      isSelecting = false;
+      const w = Math.abs(endX - startX);
+      const h = Math.abs(endY - startY);
+      if (w < 10 || h < 10) hasCropSelection = false;
+      drawCanvasWithOverlay();
+    });
+
+    document.getElementById('btn-crop').addEventListener('click', function() {
+      if (!hasCropSelection) {
+        alert('Arraste sobre a imagem para selecionar a área da assinatura antes de clicar em Cortar.');
+        return;
+      }
+      const x = Math.round(Math.min(startX, endX));
+      const y = Math.round(Math.min(startY, endY));
+      const w = Math.round(Math.abs(endX - startX));
+      const h = Math.round(Math.abs(endY - startY));
+      if (w < 10 || h < 10) return;
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = cropCanvas.width;
+      tempCanvas.height = cropCanvas.height;
+      tempCanvas.getContext('2d').putImageData(croppedImgData, 0, 0);
+
+      cropCanvas.width = w;
+      cropCanvas.height = h;
+      const ctx = cropCanvas.getContext('2d');
+      ctx.drawImage(tempCanvas, x, y, w, h, 0, 0, w, h);
+      croppedImgData = ctx.getImageData(0, 0, w, h);
+      hasCropSelection = false;
+      drawCanvasWithOverlay();
+      updateManualPreview();
+    });
+
+    document.getElementById('btn-reset-crop').addEventListener('click', function() {
+      if (!originalImg) return;
+      prepararCanvasComImagem(originalImg);
+    });
+
+    document.getElementById('btn-remove-bg').addEventListener('click', function() {
+      isBgRemoved = true;
+      document.getElementById('bg-slider-container').style.display = 'block';
+      applyManualBackgroundRemoval();
+    });
+
+    document.getElementById('bg-threshold').addEventListener('input', function(e) {
+      document.getElementById('bg-threshold-val').textContent = e.target.value;
+      if (isBgRemoved) applyManualBackgroundRemoval();
+    });
+
+    function applyManualBackgroundRemoval() {
+      const threshold = parseInt(document.getElementById('bg-threshold').value, 10) || 35;
+      const ctx = cropCanvas.getContext('2d');
+      ctx.putImageData(croppedImgData, 0, 0);
+      const imgData = ctx.getImageData(0, 0, cropCanvas.width, cropCanvas.height);
+      const d = imgData.data;
+
+      let rSum = 0, gSum = 0, bSum = 0, count = 0;
+      const step = Math.max(1, Math.floor(cropCanvas.width / 50));
+      for (let x = 0; x < cropCanvas.width; x += step) {
+        let idx = x * 4;
+        rSum += d[idx]; gSum += d[idx+1]; bSum += d[idx+2]; count++;
+        idx = ((cropCanvas.height - 1) * cropCanvas.width + x) * 4;
+        rSum += d[idx]; gSum += d[idx+1]; bSum += d[idx+2]; count++;
+      }
+      const bgR = count ? rSum / count : 250;
+      const bgG = count ? gSum / count : 250;
+      const bgB = count ? bSum / count : 250;
+
+      for (let i = 0; i < d.length; i += 4) {
+        const r = d[i], g = d[i+1], b = d[i+2];
+        const dist = Math.sqrt((r - bgR)**2 + (g - bgG)**2 + (b - bgB)**2);
+        const contrast = Math.max(bgR - r, bgG - g, bgB - b);
+
+        if (contrast < threshold && dist < threshold * 1.5) {
+          d[i+3] = 0;
+        } else if (contrast < threshold * 1.8) {
+          const factor = Math.max(0, Math.min(1, (contrast - threshold * 0.5) / (threshold * 1.3)));
+          d[i+3] = Math.round(255 * factor);
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+      updateManualPreview(imgData);
+    }
+
+    function updateManualPreview(customImgData) {
+      const previewBox = document.getElementById('preview-box');
+      const prevCanvas = document.getElementById('final-preview-canvas');
+      previewBox.style.display = 'block';
+
+      prevCanvas.width = cropCanvas.width;
+      prevCanvas.height = cropCanvas.height;
+      const pctx = prevCanvas.getContext('2d');
+      if (customImgData) {
+        pctx.putImageData(customImgData, 0, 0);
+      } else {
+        pctx.putImageData(croppedImgData, 0, 0);
+      }
+    }
+
+    document.getElementById('btn-confirm-sig').addEventListener('click', function() {
+      const targetCanvas = isBgRemoved ? cropCanvas : (document.getElementById('final-preview-canvas').width ? document.getElementById('final-preview-canvas') : cropCanvas);
+      targetCanvas.toBlob(function(blob) {
+        if (!blob) return;
+        const file = new File([blob], 'assinatura_preparada.png', { type: 'image/png' });
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        sigInput.files = dt.files;
+
+        // Atualiza a pré-visualização principal
+        previewImg.src = targetCanvas.toDataURL('image/png');
+        successCard.style.display = 'block';
+        manualCard.style.display = 'none';
+      }, 'image/png');
+    });
+  }
+
+  function start() {
+    initSignatureEditor();
+    setTimeout(preencherDadosMokados, 150);
+  }
+
+  if (document.readyState !== 'loading') {
+    start();
+  } else {
+    document.addEventListener('DOMContentLoaded', start);
+  }
+})();
+</script>

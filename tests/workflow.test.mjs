@@ -24,6 +24,12 @@ test('os rótulos do formulário batem com os do normalizador', () => {
   for (const r of esperados) assert.ok(rotulos.includes(r), `rótulo "${r}" não existe no formulário`);
 });
 
+test('o formulário inclui a etapa de preparação de assinatura (cortar e remover fundo)', () => {
+  const form = workflow.nodes.find((n) => n.type === 'n8n-nodes-base.formTrigger');
+  const camposHtml = form.parameters.formFields.values.filter((f) => f.fieldType === 'html').map((f) => f.html);
+  assert.ok(camposHtml.some((h) => h.includes('editor-assinatura') && h.includes('Remover Fundo') && h.includes('Cortar Seleção')));
+});
+
 test('nenhuma chave ou credencial no workflow', () => {
   const texto = JSON.stringify(workflow);
   assert.ok(!/AIza[0-9A-Za-z_-]{20,}/.test(texto));

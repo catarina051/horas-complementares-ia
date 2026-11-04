@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 const AQUI = dirname(fileURLToPath(import.meta.url));
 const codigo = (nome) => readFileSync(join(AQUI, 'codigo', `${nome}.js`), 'utf8');
 const cursos = JSON.parse(readFileSync(join(AQUI, '..', 'regras', 'cursos.json'), 'utf8'));
+const editorAssinaturaHtml = readFileSync(join(AQUI, '..', 'templates', 'editor-assinatura.html'), 'utf8');
 
 const nodes = [];
 const connections = {};
@@ -74,9 +75,9 @@ no('Formulário', 'n8n-nodes-base.formTrigger', 2.1, [0, 0], {
       },
       {
         fieldLabel: 'Ingresso / matriz atual', fieldType: 'radio', requiredField: true,
-        fieldOptions: { values: Object.values(cursos['eng-controle-automacao'].matrizes).map((m) => ({ option: m.rotulo })) },
+        fieldOptions: { values: Object.values(cursos['eng-computacao'].matrizes).map((m) => ({ option: m.rotulo })) },
       },
-      { fieldType: 'html', html: '<p>Se você migrou para o PPC novo, escolha a opção a partir de 2023.1, mesmo que tenha ingressado antes. A matriz atual no SIGAA é a referência.</p>' },
+      { fieldType: 'html', html: '<p>Escolha a opção correspondente à sua situação acadêmica no SIGAA. Quem migrou para o PPC novo utiliza a matriz de transição.</p>' },
       { fieldLabel: 'Certificado (PDF)', fieldType: 'file', acceptFileTypes: '.pdf', multipleFiles: false, requiredField: true },
       {
         fieldLabel: 'Declaração de autenticidade', fieldType: 'radio', requiredField: true,
@@ -91,6 +92,7 @@ no('Formulário', 'n8n-nodes-base.formTrigger', 2.1, [0, 0], {
       { fieldLabel: 'RG', fieldType: 'text' },
       { fieldLabel: 'CPF', fieldType: 'text', placeholder: '000.000.000-00' },
       { fieldLabel: 'Foto da assinatura (JPG ou PNG)', fieldType: 'file', acceptFileTypes: '.jpg,.jpeg,.png', multipleFiles: false },
+      { fieldType: 'html', html: editorAssinaturaHtml },
       { fieldType: 'html', html: '<p><strong>Já tenho a declaração-base:</strong> envie o PDF que a ferramenta gerou no seu primeiro uso. Só a data muda.</p>' },
       { fieldLabel: 'Declaração-base (PDF)', fieldType: 'file', acceptFileTypes: '.pdf', multipleFiles: false },
       { fieldLabel: 'Privacidade', fieldType: 'checkbox', requiredField: true, fieldOptions: { values: [{ option: PRIVACIDADE }] } },
@@ -110,7 +112,7 @@ code('Normalizar API', 'normalizar-api', [220, 320]);
 se('Entrada ok?', [440, 160], semErro);
 se('Precisa de declaração?', [660, 100], igual('origem', 'formulario'));
 se('Primeiro uso?', [880, 0], igual('modo', 'primeiro_uso'));
-postPdf('Recortar assinatura', [880, -360], 'http://declaracao:8000/assinatura', 'assinatura');
+postPdf('Recortar assinatura', [880, -360], 'http://declaracao:8000/assinatura?modo=ia', 'assinatura');
 code('Preparar assinatura', 'preparar-assinatura', [1100, -360]);
 se('Assinatura ok?', [1320, -360], semErro);
 code('Montar declaração', 'montar-declaracao', [1100, -120]);
