@@ -1,9 +1,15 @@
 name: horas-complementares
 
+# Logs do Docker com rotação: sem isso crescem até encher o disco da VM.
+x-logs: &logs
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
+
 services:
   n8n:
     image: n8nio/n8n:2.45.7
     restart: unless-stopped
+    logging: *logs
     ports:
       - "127.0.0.1:${N8N_PORTA:-5679}:5678"
     environment:
@@ -24,8 +30,18 @@ services:
       EXECUTIONS_DATA_SAVE_ON_ERROR: none
       EXECUTIONS_DATA_SAVE_ON_PROGRESS: "false"
       EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS: "false"
+      # Os arquivos de cada execução (certificado, assinatura, PDFs) ficam num volume em memória
+      # (n8n_binarios, abaixo): nunca vão para o disco nem para backups do n8n_data.
+      N8N_BINARY_DATA_STORAGE_PATH: /home/node/binarios
+      # Mesmo sem salvar execuções, o n8n grava e apaga linhas; o VACUUM na subida elimina os restos
+      # (valores de CPF e RG) das páginas livres do SQLite.
+      DB_SQLITE_VACUUM_ON_STARTUP: "true"
+      # Limites de upload em MiB (o serviço Python também recusa arquivos acima de 10 MB).
+      N8N_FORMDATA_FILE_SIZE_MAX: "15"
+      N8N_PAYLOAD_SIZE_MAX: "16"
     volumes:
       - n8n_data:/home/node/.n8n
+      - n8n_binarios:/home/node/binarios
       - ./prompts:/data/prompts:ro
       - ./regras:/data/regras:ro
       - ./templates:/data/templates:ro
@@ -41,8 +57,19 @@ services:
       declaracao:
         condition: service_healthy
 
+  # Apaga arquivos de execução com mais de 30 min no volume em memória (sobram quando uma
+  # execução falha no meio). Reiniciar a VM também apaga tudo.
+  limpeza:
+    image: alpine:3.20
+    restart: unless-stopped
+    logging: *logs
+    volumes:
+      - n8n_binarios:/binarios
+    command: ["sh", "-c", "while true; do find /binarios -type f -mmin +30 -delete; find /binarios -mindepth 1 -type d -empty -delete; sleep 300; done"]
+
   gotenberg:
     image: gotenberg/gotenberg:8.39.0
+    logging: *logs
     restart: unless-stopped
     ports:
       - "127.0.0.1:3001:3000"
@@ -50,6 +77,7 @@ services:
   declaracao:
     build: ./services/declaracao
     restart: unless-stopped
+    logging: *logs
     # Sem porta publicada: só o n8n fala com este serviço, pela rede interna do compose.
     # A prévia do recorte com IA chega pelo webhook /webhook/assinatura-ia do n8n.
     environment:
@@ -71,3 +99,6 @@ services:
 
 volumes:
   n8n_data:
+  n8n_binarios:
+    driver: local
+    driver_opts: { type: tmpfs, device: tmpfs, o: "size=512m,uid=1000,gid=1000,mode=0700" }
