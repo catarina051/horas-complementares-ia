@@ -46,10 +46,9 @@ A validação final da atividade e das horas continua sendo da Coordenação.
 
 1. Seleciona o curso e a versão da **matriz atual**. Quem migrou de PPC seleciona a matriz de destino.
 2. Envia o certificado em PDF. Documentos com páginas em imagem passam por OCR local quando necessário.
-3. No primeiro uso, informa os dados e envia uma foto da assinatura. O sistema detecta e recorta a
-   assinatura e gera também uma declaração-base para guardar.
+3. No primeiro uso, informa os dados e anexa a foto da assinatura, podendo cortar a imagem e remover o fundo branco diretamente na interface antes de ela ser anexada ao documento. A ferramenta monta a declaração e gera também uma declaração-base para guardar.
 4. Nos próximos certificados, envia a declaração-base. O sistema atualiza a data sem pedir os dados novamente.
-5. Confere a categoria, a regra e os avisos; baixa o PDF e faz o registro no SIGAA.
+5. Confere a categoria, a regra e os avisos; pré-visualiza o PDF gerado completo diretamente na tela antes de baixar e faz o registro no SIGAA.
 
 Os dois cursos têm versões para ingresso até 2022.2 e a partir de 2023.1. Os totais, códigos,
 [fontes e limitações do catálogo](regras/README.md) foram conferidos com PPCs e com o SIGAA público.
@@ -63,18 +62,15 @@ atividade e extrair quantidades. **O modelo não calcula horas nem inventa o có
 |---|---|---|
 | Interpretação do certificado | Gemini com contexto do curso, exemplos e saída JSON com schema | Lidar com redações diferentes e categorias próximas |
 | Extração de texto de páginas em imagem | Tesseract local | Ler certificados digitalizados antes da chamada ao LLM |
-| Localização da assinatura | YOLOS Tiny pré-treinado, exportado para ONNX e executado em CPU | Reconhecer a região em cada foto, sem coordenadas fixas |
+| Preparo da assinatura | Recorte e remoção de fundo pelo aluno no navegador + limpeza direta local | Ajustar a assinatura antes do anexo sem depender de detecção automática |
 | Aproveitamento de horas | Fórmulas, fatores e tetos em JSON + JavaScript | Permitir cálculo reproduzível e consulta à fonte |
-| Opção do SIGAA | Catálogo por matriz, categoria e variante | Devolver o rótulo conhecido sem pedir que a IA o gere |
-| Declaração e PDF final | Templates por curso, serviço Python e Gotenberg | Repetir o formato da documentação e reunir os arquivos |
+| Opção do SIGAA | Comparação pelo LLM com catálogo por matriz, categoria e variante | Escolher entre os tipos disponíveis respeitando o código daquele aluno |
+| Declaração, pré-visualização e PDF final | Templates por curso, Gotenberg e pré-visualizador interativo | Permitir conferência visual completa do documento antes do download |
 
 O [prompt v2](prompts/classificacao/v2.md) usa contexto do curso, exemplos de ambiguidades,
-[schema de 31 categorias](prompts/classificacao/schema.json) e instruções para tratar o certificado
-como dado. A saída traz alternativas e evidências faltantes; sua confiança declarada não é uma
-probabilidade calibrada de acerto. As mudanças têm [histórico](prompts/CHANGELOG.md).
-
-O detector usa [pesos pré-treinados de terceiros](services/declaracao/MODELO.md), sem treinamento
-próprio. O preparo da imagem, o agrupamento de traços e o tratamento de falhas fazem parte da integração.
+[schema de 31 categorias](prompts/classificacao/schema.json), comparação com tipos disponíveis no SIGAA
+e instruções para tratar o certificado como dado. A saída traz alternativas e evidências faltantes; sua
+confiança declarada não é uma probabilidade calibrada de acerto. As mudanças têm [histórico](prompts/CHANGELOG.md).
 
 ## Arquitetura
 
@@ -82,12 +78,11 @@ próprio. O preparo da imagem, o agrupamento de traços e o tratamento de falhas
 flowchart LR
     C[Certificado PDF] --> O[Texto ou OCR local]
     O --> A[Ocultação de identificadores]
-    A --> L[Gemini: categoria e quantidades]
+    A --> L[Gemini: categoria, código e quantidades]
     L --> R[Regras e catálogo SIGAA]
-    S[Foto da assinatura] --> V[Detector local]
-    V --> D[Declaração com data]
+    S[Assinatura: recorte e fundo transparente] --> D[Declaração com data]
     B[Declaração-base no reuso] --> D
-    D --> M[PDF final e resultado]
+    D --> M[PDF final, pré-visualizador e resultado]
     R --> M
     C --> M
 ```
@@ -98,11 +93,11 @@ O formulário e a API `/webhook/classificar` compartilham a classificação e o 
 
 ## O que já foi validado
 
-| Evidência em 31/10/2026 | Escopo |
+| Evidência | Escopo |
 |---|---|
-| **34 testes JavaScript passando** | Cálculos, matrizes, códigos/opções do SIGAA, ocultação de identificadores e integração dos nós |
-| **27 testes Python passando no container** | Datas, leitura de PDF, OCR, rotas HTTP e processamento da assinatura |
-| Primeiro uso e reuso pelo formulário | PDF final de duas páginas e preservação da assinatura na declaração-base |
+| **37 testes JavaScript passando** | Cálculos, matrizes, códigos/opções do SIGAA, prompt com tipos disponíveis, pré-visualizador de PDF e editor de assinatura |
+| **27 testes Python passando no container** | Datas, leitura de PDF, OCR, rotas HTTP e processamento direto da assinatura |
+| Primeiro uso e reuso pelo formulário | PDF final com pré-visualizador em tela, assinatura tratada e declaração-base |
 | Conferência visual dos modelos dos dois cursos | Campos, data, posição da assinatura e certificado |
 | Exemplo fictício processado pela API real | Categoria na área, ECL2023 e 24 h/a para o curso de 20 horas |
 
