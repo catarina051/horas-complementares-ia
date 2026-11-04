@@ -22,6 +22,50 @@ def _recortar_alfa(img: Image.Image) -> Image.Image:
     return ImageOps.expand(img.crop(caixa), border=margem, fill=(0, 0, 0, 0))
 
 
+def mascara_papel(rgb: Image.Image) -> np.ndarray:
+    """Onde está a folha: claro e quase sem cor. Madeira, tecido e mesa ficam de fora.
+
+    Sem isso, os veios de uma mesa de madeira passam no mesmo teste de contraste que a tinta
+    e a "assinatura" vira a foto inteira. Em imagem que já é só papel, devolve tudo verdadeiro.
+    """
+    escala = min(1, 400 / max(rgb.size))
+    pequena = rgb.resize((max(1, round(rgb.width * escala)), max(1, round(rgb.height * escala))))
+    hsv = np.asarray(pequena.convert('HSV'), dtype=np.float32)
+    sat, val = hsv[..., 1], hsv[..., 2]
+    claro = val >= np.percentile(val, 90) * .72
+    papel = (claro & (sat < 70)).astype(np.uint8) * 255
+    # Fecha os buracos dos traços e afasta 2% da borda da folha (sombra, quina da mesa).
+    margem = max(3, round(max(pequena.size) * .02)) | 1
+    img = Image.fromarray(papel).filter(ImageFilter.MaxFilter(margem)).filter(ImageFilter.MinFilter(margem * 3))
+    mascara = np.asarray(img) > 0
+    if mascara.mean() < .15:  # não achou folha clara o bastante: não arrisca cortar nada
+        return np.ones((rgb.height, rgb.width), dtype=bool)
+    # Só a maior região de papel (descarta reflexos soltos na mesa).
+    rotulos = np.zeros(mascara.shape, dtype=np.int32)
+    altura, largura = mascara.shape
+    tamanhos = {}
+    atual = 0
+    for y0 in range(altura):
+        for x0 in range(largura):
+            if not mascara[y0, x0] or rotulos[y0, x0]:
+                continue
+            atual += 1
+            fila = [(y0, x0)]
+            rotulos[y0, x0] = atual
+            n = 0
+            while fila:
+                y, x = fila.pop()
+                n += 1
+                for ny, nx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
+                    if 0 <= ny < altura and 0 <= nx < largura and mascara[ny, nx] and not rotulos[ny, nx]:
+                        rotulos[ny, nx] = atual
+                        fila.append((ny, nx))
+            tamanhos[atual] = n
+    maior = max(tamanhos, key=tamanhos.get)
+    folha = Image.fromarray(((rotulos == maior) * 255).astype(np.uint8)).resize(rgb.size, Image.Resampling.NEAREST)
+    return np.asarray(folha) > 0
+
+
 def limpar_tinta(regiao: Image.Image, caixa_assinatura: tuple | None = None) -> Image.Image:
     """Remove luz/fundo na região localizada pelo modelo; funciona com tinta de qualquer cor."""
     branco = Image.new('RGBA', regiao.size, 'white')
@@ -30,9 +74,11 @@ def limpar_tinta(regiao: Image.Image, caixa_assinatura: tuple | None = None) -> 
     pixels = np.asarray(rgb, dtype=np.float32)
     fundo = np.asarray(rgb.filter(ImageFilter.GaussianBlur(max(5, rgb.width / 30))), dtype=np.float32)
     contraste = np.max(fundo - pixels, axis=2)
-    ruido = float(np.median(np.abs(contraste)))
+    folha = mascara_papel(rgb)
+    # O ruído é medido só no papel: a textura da mesa não pode subir nem baixar o corte.
+    ruido = float(np.median(np.abs(contraste[folha])))
     corte = max(7, ruido * 2.5)
-    alfa = np.clip((contraste - corte) * 10, 0, 255).astype(np.uint8)
+    alfa = (np.clip((contraste - corte) * 10, 0, 255) * folha).astype(np.uint8)
     largura, altura = rgb.size
     if caixa_assinatura:
         bx0, by0, bx1, by1 = caixa_assinatura

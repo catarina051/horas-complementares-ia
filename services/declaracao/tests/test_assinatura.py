@@ -209,3 +209,34 @@ def test_recortar_assinatura_ia_com_resposta_gemini(monkeypatch):
     img = Image.open(BytesIO(base64.b64decode(r['imagem_base64'])))
     assert img.mode == 'RGBA'
     assert img.getpixel((0, 0))[3] == 0
+
+
+def foto_sobre_mesa_de_madeira() -> bytes:
+    """Como a foto real que quebrou: folha clara em cima de uma mesa de madeira com veios escuros."""
+    import random
+    random.seed(3)
+    img = Image.new('RGB', (720, 1280), (176, 128, 84))
+    d = ImageDraw.Draw(img)
+    for i in range(-1280, 720, 9):  # veios diagonais escuros, como os da mesa
+        tom = random.randint(70, 130)
+        d.line([(i, 0), (i + 900, 520)], fill=(tom, tom - 35, tom - 70), width=random.randint(2, 5))
+    d.rectangle([0, 380, 720, 1280], fill=(226, 222, 218))  # a folha ocupa a parte de baixo
+    d.line([(250, 660), (330, 600), (360, 700), (430, 610), (560, 560)], fill=(40, 45, 120), width=5)
+    d.line([(230, 750), (380, 620)], fill=(40, 45, 120), width=4)
+    saida = BytesIO()
+    img.save(saida, 'JPEG', quality=90)
+    return saida.getvalue()
+
+
+def test_veios_da_mesa_nao_entram_na_assinatura():
+    r = assinatura.recortar_assinatura(foto_sobre_mesa_de_madeira())
+    # A caixa fica só em volta dos traços (~330 x 190 px), não da foto inteira (720 x 1280).
+    assert r['largura'] < 420 and r['altura'] < 260, (r['largura'], r['altura'])
+    img = Image.open(BytesIO(base64.b64decode(r['imagem_base64'])))
+    tinta = [px for px in img.getdata() if px[3] > 150]
+    assert tinta and sum(px[2] for px in tinta) / len(tinta) > 80  # tinta azul preservada
+
+
+def test_imagem_que_ja_e_so_papel_nao_perde_nada():
+    papel = Image.new('RGB', (400, 200), 'white')
+    assert assinatura.mascara_papel(papel).all()
