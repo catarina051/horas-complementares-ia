@@ -204,11 +204,11 @@ def test_http_renderizar(servidor):
     assert status == 422
 
 
-def test_http_assinatura_ia_e_cors(servidor):
+def test_http_assinatura_ia_sem_cors(servidor):
+    # O serviço só é chamado pelo n8n na rede interna: não libera navegadores de outras origens.
     req_opt = urllib.request.Request(servidor + '/assinatura-ia', method='OPTIONS')
-    with urllib.request.urlopen(req_opt) as resp:
-        assert resp.status == 204
-        assert resp.headers.get('Access-Control-Allow-Origin') == '*'
+    with pytest.raises(urllib.error.HTTPError):
+        urllib.request.urlopen(req_opt)
 
     from test_assinatura import foto
     dados = foto(transparente=True)

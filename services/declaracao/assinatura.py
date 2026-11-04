@@ -210,6 +210,8 @@ def recortar_assinatura_com_ia(dados: bytes, api_key: str | None = None, modelo:
                             'confianca': 1.0,
                         }
                 img = img_rgba.convert('RGB')
+                # Mesmo teto do caminho local: os laços da limpeza percorrem cada pixel.
+                img.thumbnail((1800, 1800))
     except (UnidentifiedImageError, OSError, Image.DecompressionBombError, Image.DecompressionBombWarning):
         raise ErroAssinatura('Não consegui ler a imagem da assinatura. Envie uma foto em JPG ou PNG.') from None
 
@@ -259,13 +261,17 @@ def recortar_assinatura_com_ia(dados: bytes, api_key: str | None = None, modelo:
             corpo_resposta = json.loads(r.read().decode('utf-8'))
             texto_json = corpo_resposta['candidates'][0]['content']['parts'][0]['text']
             ia_dados = json.loads(texto_json)
-    except Exception as e:
+    except Exception:
+        # O texto da exceção não volta ao navegador: pode conter detalhes da chamada à API.
         resultado = recortar_assinatura(dados)
-        resultado['aviso'] = f'IA indisponível ({e}); processamento local executado.'
+        resultado['aviso'] = 'IA indisponível; processamento local executado.'
         return resultado
 
-    box = ia_dados.get('box_2d')
-    if not box or len(box) != 4:
+    box = ia_dados.get('box_2d') if isinstance(ia_dados, dict) else None
+    valido = (isinstance(box, list) and len(box) == 4
+              and all(isinstance(v, (int, float)) and 0 <= v <= 1000 for v in box)
+              and box[0] < box[2] and box[1] < box[3])
+    if not valido:
         return recortar_assinatura(dados)
 
     w, h = img.size

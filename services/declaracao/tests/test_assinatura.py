@@ -200,3 +200,38 @@ def test_veios_da_mesa_nao_entram_na_assinatura():
 def test_imagem_que_ja_e_so_papel_nao_perde_nada():
     papel = Image.new('RGB', (400, 200), 'white')
     assert assinatura.mascara_papel(papel).all()
+
+
+@pytest.mark.parametrize('resposta', [
+    {'box_2d': 'abc'}, {'box_2d': [10, 20, 'x', 40]}, {'box_2d': [500, 500, 100, 100]}, [], {'box_2d': [0, 0, 2000, 900]},
+])
+def test_caixa_invalida_do_gemini_cai_no_recorte_local(monkeypatch, resposta):
+    import json as _json
+
+    class Resp:
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def read(self):
+            texto = _json.dumps(resposta)
+            return _json.dumps({'candidates': [{'content': {'parts': [{'text': texto}]}}]}).encode()
+
+    monkeypatch.setattr(assinatura.urllib.request, 'urlopen', lambda *a, **k: Resp())
+    r = assinatura.recortar_assinatura_com_ia(foto(), api_key='teste')
+    assert r['metodo'] == 'processamento_direto'
+
+
+def test_falha_da_ia_nao_devolve_o_texto_da_excecao(monkeypatch):
+    def falhar(*a, **k):
+        raise RuntimeError('detalhe-interno-da-chamada')
+    monkeypatch.setattr(assinatura.urllib.request, 'urlopen', falhar)
+    r = assinatura.recortar_assinatura_com_ia(foto(), api_key='teste')
+    assert 'detalhe-interno' not in r['aviso']
+
+
+def test_dpi_cai_em_pagina_gigante():
+    import pymupdf
+    doc = pymupdf.open()
+    gigante = doc.new_page(width=14400, height=14400)  # 200 x 200 polegadas
+    assert app.dpi_seguro(gigante, 300) * 200 <= (app.MAX_PIXELS_PAGINA ** .5) + 1
+    a4 = doc.new_page()
+    assert app.dpi_seguro(a4, 300) == 300

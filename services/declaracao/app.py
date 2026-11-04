@@ -23,6 +23,7 @@ import base64
 import json
 import re
 import subprocess
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
 from urllib.parse import parse_qs, urlparse
@@ -173,13 +174,25 @@ def ocr(imagem_png: bytes) -> str:
     return r.stdout.decode('utf-8', 'replace') if r.returncode == 0 else ''
 
 
+# Uma página com MediaBox gigante renderizada a 300 dpi derruba a memória da VM. O dpi cai até a
+# imagem caber neste limite de pixels (~ uma folha A4 a 300 dpi tem 8,7 milhões).
+MAX_PIXELS_PAGINA = 12_000_000
+# Renderização, OCR e recorte de imagem são pesados: no máximo 2 ao mesmo tempo.
+TRABALHO_PESADO = threading.BoundedSemaphore(2)
+
+
+def dpi_seguro(pagina, dpi: int) -> int:
+    largura, altura = pagina.rect.width / 72, pagina.rect.height / 72  # polegadas
+    area = max(largura * altura, 1e-6)
+    return max(10, min(dpi, int((MAX_PIXELS_PAGINA / area) ** .5)))
+
+
 def extrair_texto(pdf: bytes, max_paginas: int = 10) -> dict:
     """Texto do certificado para o classificador.
 
     Página com imagem e quase nenhum texto selecionável (certificado colado como figura
     no modelo do curso, ou digitalizado) passa por OCR. O texto selecionável é mantido.
     """
-    print(f"DEBUG renderizar: len={len(pdf)}, prefix={pdf[:50]!r}", flush=True)
     try:
         doc = pymupdf.open(stream=pdf, filetype='pdf')
     except (pymupdf.FileDataError, RuntimeError):
@@ -190,7 +203,7 @@ def extrair_texto(pdf: bytes, max_paginas: int = 10) -> dict:
             break
         texto = pagina.get_text().strip()
         if pagina.get_images() and len(texto) < OCR_LIMITE_TEXTO:
-            lido = ocr(pagina.get_pixmap(dpi=300, colorspace=pymupdf.csGRAY).tobytes('png')).strip()
+            lido = ocr(pagina.get_pixmap(dpi=dpi_seguro(pagina, 300), colorspace=pymupdf.csGRAY).tobytes('png')).strip()
             if lido:
                 texto = f'{texto}\n{lido}'.strip()
                 paginas_ocr.append(i + 1)
@@ -217,7 +230,7 @@ def renderizar_paginas(pdf: bytes, dpi: int = 110, max_paginas: int = 10) -> dic
     for i, pagina in enumerate(doc):
         if i >= max_paginas:
             break
-        pix = pagina.get_pixmap(dpi=dpi)
+        pix = pagina.get_pixmap(dpi=dpi_seguro(pagina, dpi))
         img_b64 = base64.b64encode(pix.tobytes('jpeg', jpg_quality=85)).decode('ascii')
         paginas.append({
             'numero': i + 1,
@@ -234,18 +247,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
         self.send_header('Content-Length', str(len(dados)))
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, x-goog-api-key')
         self.end_headers()
         self.wfile.write(dados)
-
-    def do_OPTIONS(self) -> None:
-        self.send_response(204)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, x-goog-api-key')
-        self.end_headers()
 
     def do_GET(self) -> None:
         if urlparse(self.path).path == '/health':
@@ -264,23 +267,24 @@ class Handler(BaseHTTPRequestHandler):
             return
         corpo = self.rfile.read(tamanho)
         try:
-            if url.path in ('/assinatura', '/assinatura-ia'):
-                query = parse_qs(url.query)
-                usar_ia = (
-                    url.path == '/assinatura-ia'
-                    or query.get('modo', [''])[0] == 'ia'
-                    or query.get('ia', [''])[0] in ('1', 'true')
-                )
-                if usar_ia:
-                    self._json(200, recortar_assinatura_ia(corpo))
+            with TRABALHO_PESADO:
+                if url.path in ('/assinatura', '/assinatura-ia'):
+                    query = parse_qs(url.query)
+                    usar_ia = (
+                        url.path == '/assinatura-ia'
+                        or query.get('modo', [''])[0] == 'ia'
+                        or query.get('ia', [''])[0] in ('1', 'true')
+                    )
+                    if usar_ia:
+                        self._json(200, recortar_assinatura_ia(corpo))
+                    else:
+                        self._json(200, recortar_assinatura(corpo))
+                elif url.path == '/texto':
+                    self._json(200, extrair_texto(corpo))
+                elif url.path == '/renderizar':
+                    self._json(200, renderizar_paginas(corpo))
                 else:
-                    self._json(200, recortar_assinatura(corpo))
-            elif url.path == '/texto':
-                self._json(200, extrair_texto(corpo))
-            elif url.path == '/renderizar':
-                self._json(200, renderizar_paginas(corpo))
-            else:
-                self._json(200, processar(corpo, parse_qs(url.query).get('data', [None])[0]))
+                    self._json(200, processar(corpo, parse_qs(url.query).get('data', [None])[0]))
         except ErroDeclaracao as e:
             self._json(422, {'erro': str(e)})
 
