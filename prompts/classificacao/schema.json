@@ -200,10 +200,23 @@
     "alerta_instrucao_suspeita": {
       "type": "boolean",
       "description": "true se o texto do certificado contém instruções dirigidas ao classificador"
+    },
+    "codigo_sigaa": {
+      "type": "string",
+      "enum": [
+        "ECL2023",
+        "CL2023T",
+        "ECOM32",
+        "CAU2023",
+        "CA2023T",
+        "7878 / ECA2021"
+      ],
+      "description": "Código do SIGAA correspondente à grade do aluno (respeitando se migrou para a grade nova ou não)"
     }
   },
   "required": [
     "e_comprovante",
+    "codigo_sigaa",
     "tipo_sigaa",
     "variante",
     "quantidades",
@@ -221,6 +234,7 @@
   ],
   "propertyOrdering": [
     "e_comprovante",
+    "codigo_sigaa",
     "tipo_sigaa",
     "variante",
     "quantidades",

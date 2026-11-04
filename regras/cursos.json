@@ -7,17 +7,23 @@
     "area_concentracao": "computação: programação, desenvolvimento de software, banco de dados, ciência de dados e IA, redes, cibersegurança, cloud, sistemas digitais, arquitetura de computadores e eletrônica",
     "matriz_padrao": null,
     "matrizes": {
-      "ate-2022-2": {
-        "codigo_sigaa": "ECOM32",
-        "rotulo": "Ingresso até 2022.2",
-        "total_ac_ha": 450,
-        "fonte": "https://www.eng-computacao.leopoldina.cefetmg.br/aluno/atividades-complementares/"
-      },
       "desde-2023-1": {
         "codigo_sigaa": "ECL2023",
-        "rotulo": "Ingresso a partir de 2023.1",
+        "rotulo": "Ingresso a partir de 2023.1 (Grade nova)",
         "total_ac_ha": 135,
         "fonte": "https://www.eng-computacao.leopoldina.cefetmg.br/wp-content/uploads/sites/178/2024/07/PPCEngComp-v20240719.pdf"
+      },
+      "migracao": {
+        "codigo_sigaa": "CL2023T",
+        "rotulo": "Ingressei antes de 2023.1 e MIGREI para a grade nova",
+        "total_ac_ha": 570,
+        "fonte": "https://www.sig.cefetmg.br/sigaa/public/curso/curriculo.jsf?id=6207540&lc=pt_BR"
+      },
+      "ate-2022-2": {
+        "codigo_sigaa": "ECOM32",
+        "rotulo": "Ingresso até 2022.2 (Grade antiga, não migrei)",
+        "total_ac_ha": 450,
+        "fonte": "https://www.eng-computacao.leopoldina.cefetmg.br/aluno/atividades-complementares/"
       }
     },
     "fontes": {
@@ -131,16 +137,22 @@
     "area_concentracao": "controle e automação: automação industrial, sistemas de controle, instrumentação, eletrônica, eletrotécnica e máquinas elétricas, robótica, CLP e programação industrial, sistemas embarcados, redes industriais e programação",
     "matriz_padrao": null,
     "matrizes": {
-      "ate-2022-2": {
-        "codigo_sigaa": "7878 / ECA2021",
-        "rotulo": "Ingresso até 2022.2",
-        "total_ac_ha": 240,
-        "fonte": "https://www.eng-controleautomacao.leopoldina.cefetmg.br/atividades-complementares/"
-      },
       "desde-2023-1": {
         "codigo_sigaa": "CAU2023",
-        "rotulo": "Ingresso a partir de 2023.1",
+        "rotulo": "Ingresso a partir de 2023.1 (Grade nova)",
         "total_ac_ha": 45,
+        "fonte": "https://www.eng-controleautomacao.leopoldina.cefetmg.br/atividades-complementares/"
+      },
+      "migracao": {
+        "codigo_sigaa": "CA2023T",
+        "rotulo": "Ingressei antes de 2023.1 e MIGREI para a grade nova",
+        "total_ac_ha": 240,
+        "fonte": "https://sig.cefetmg.br/sigaa/public/curso/curriculo.jsf?id=318&lc=pt_BR"
+      },
+      "ate-2022-2": {
+        "codigo_sigaa": "7878 / ECA2021",
+        "rotulo": "Ingresso até 2022.2 (Grade antiga, não migrei)",
+        "total_ac_ha": 240,
         "fonte": "https://www.eng-controleautomacao.leopoldina.cefetmg.br/atividades-complementares/"
       }
     },

@@ -26,7 +26,9 @@ const modo = texto('modo').startsWith('Primeira') ? 'primeiro_uso' : 'reuso';
 // As opções de Curso e Ingresso no formulário são os rótulos de regras/cursos.json.
 const [cursoId, curso] = Object.entries(cursos).find(([, c]) => c.rotulo_formulario === texto('curso')) ?? [];
 const matrizId = curso?.matriz_padrao
-  ?? Object.entries(curso?.matrizes ?? {}).find(([, m]) => m.rotulo === texto('ingresso'))?.[0];
+  ?? Object.entries(curso?.matrizes ?? {}).find(([, m]) => (
+    m.rotulo === texto('ingresso') || (texto('ingresso') && (m.rotulo.startsWith(texto('ingresso')) || texto('ingresso').startsWith(m.rotulo)))
+  ))?.[0];
 const saida = {
   origem: 'formulario',
   modo,

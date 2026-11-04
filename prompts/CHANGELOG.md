@@ -3,6 +3,17 @@
 Formato de cada versão: o erro que apareceu na avaliação → a correção no prompt → o acerto antes e
 depois, medido com `evals/run_eval.py` no mesmo conjunto de certificados.
 
+## classificacao/v2 (atualização: decisão do código SIGAA e 3 situações de matriz)
+
+Motivo: instruir a IA a comparar o certificado com os tipos cadastrados no SIGAA e respeitar o código exato da matriz do aluno dentre as 3 situações reais (grade nova direta, migração de grade com matriz de transição, ou grade antiga sem migração).
+
+- Contexto do aluno injetado via `<usuario>`: curso, situação acadêmica e código correspondente no SIGAA:
+  - Grade nova direta (ingresso a partir de 2023.1): `ECL2023` (135 h/a) / `CAU2023` (45 h/a)
+  - Aluno de ingresso anterior que migrou para a grade nova: matriz de transição `CL2023T` (570 h/a) / `CA2023T` (240 h/a)
+  - Aluno de ingresso até 2022.2 que não migrou: `ECOM32` (450 h/a) / `7878 / ECA2021` (240 h/a)
+- Regra de decisão no prompt: a IA deve comparar a atividade do certificado com as opções disponíveis no SIGAA para aquele código e escolher uma, respeitando rigorosamente o código do aluno.
+- Adição ao schema: campo `codigo_sigaa` incluído no JSON de resposta (`prompts/classificacao/schema.json`) com validação de enum.
+
 ## classificacao/v2
 
 Motivo: a ferramenta passou a atender também Engenharia de Controle e Automação.

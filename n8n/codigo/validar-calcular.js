@@ -101,7 +101,9 @@ if (!c.e_comprovante) {
 const horas = Number(c.quantidades?.horas);
 const uso = r.body.usageMetadata ?? {};
 // Identificadores e rótulos vêm das capturas do SIGAA, nunca do modelo.
-const codigoSigaa = cursos[base.curso].matrizes[base.matriz].codigo_sigaa;
+const codigoMatriz = cursos[base.curso].matrizes[base.matriz].codigo_sigaa;
+c.codigo_sigaa = c.codigo_sigaa ?? codigoMatriz;
+const codigoSigaa = codigoMatriz;
 let varianteSigaa = c.variante;
 if (codigoSigaa === '7878 / ECA2021' && c.tipo_sigaa === 'Participação em Programas de Intercâmbio cultural/estudantil') {
   const meses = Number(c.quantidades?.meses) || Number(c.quantidades?.anos) * 12;
