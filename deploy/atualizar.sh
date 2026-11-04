@@ -20,6 +20,7 @@ voltar() {
   trap - ERR
   echo 'FALHA: restaurando a versao anterior.'
   dc stop n8n declaracao || true
+  git checkout -- .
   git checkout --detach "$anterior"
   docker image tag "horas-complementares-declaracao:rollback-$anterior" horas-complementares-declaracao
   if [ "$banco_salvo" = 1 ]; then tar -xzf "$backup/n8n-data.tgz" -C "$(volume_n8n)"; fi
@@ -36,6 +37,9 @@ trap voltar ERR
 
 git fetch origin main
 git cat-file -e "$alvo^{commit}"
+# Versões antigas do deploy editavam arquivos versionados no servidor; o checkout recusaria rodar.
+# O backup acima guarda o commit anterior, e essas edições já estão no repositório.
+git checkout -- .
 git checkout --detach "$alvo"
 
 # O patch do formulário (n8n/patches/utils.js) é da 2.45.7: outra versão quebraria o formulário.
