@@ -20,12 +20,17 @@ docker compose run --rm --no-deps n8n import:workflow --input=/data/workflows/ho
 docker compose run --rm --no-deps n8n publish:workflow --id=hcIaHorasCompl01
 docker compose up -d n8n
 
+# -m 5: durante a subida a conexão pode ficar pendurada sem resposta. A saída vai para /dev/null
+# pelo shell: com MSYS_NO_PATHCONV, o "-o /dev/null" do curl do Windows falha ao gravar (erro 23).
+formulario_ok() { curl -fs -m 5 http://localhost:"${N8N_PORTA:-5679}"/form/horas-complementares > /dev/null; }
+esperar() {  # $1 = tentativas de 2 s
+  i=0
+  until formulario_ok; do
+    i=$((i + 1)); [ "$i" -ge "$1" ] && return 1
+    printf '.'; sleep 2
+  done
+}
+
 printf 'Aguardando o formulário responder'
-tentativas=0
-# -m 5: durante a subida a conexão pode ficar pendurada sem resposta.
-until curl -fs -m 5 -o /dev/null http://localhost:"${N8N_PORTA:-5679}"/form/horas-complementares; do
-  tentativas=$((tentativas + 1))
-  if [ "$tentativas" -ge 120 ]; then echo ' o n8n não subiu em 4 min; veja: docker compose logs n8n'; exit 1; fi
-  printf '.'; sleep 2
-done
+esperar 120 || { echo ' o n8n não subiu em 4 min; veja: docker compose logs n8n'; exit 1; }
 echo ' pronto.'
