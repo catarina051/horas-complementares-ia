@@ -73,7 +73,7 @@
       <div>
         <strong style="color: #24292f; font-size: 13px;">✂️ Ajuste Manual da Assinatura</strong>
         <p style="margin: 2px 0 0; color: #57606a; font-size: 12px;">
-          Selecione o retângulo em volta da sua assinatura e clique em <b>Cortar Seleção</b>. Tudo acontece no seu navegador: a foto não é enviada a nenhuma IA.
+          Selecione o retângulo em volta da sua assinatura e clique em <b>Cortar Seleção</b>. O recorte acontece no seu navegador e a foto não é enviada a nenhuma IA; ela só chega ao servidor desta ferramenta quando você envia o formulário, para montar o PDF.
         </p>
       </div>
       <button type="button" id="btn-close-manual" style="background: none; border: none; font-size: 18px; color: #57606a; cursor: pointer; padding: 0 4px;">&times;</button>
@@ -165,6 +165,7 @@
 
     let originalImg = null;
     let originalFile = null;
+    let geracaoIA = 0;  // cada envio à IA tem um número; respostas antigas são ignoradas
     let croppedImgData = null;
     let isSelecting = false;
     let startX = 0, startY = 0, endX = 0, endY = 0;
@@ -200,7 +201,8 @@
       } else if (tipo === 'manual') {
         loadingCard.style.display = 'none';
         successCard.style.display = 'none';
-        abrirModoManual('Recorte manual: a foto fica só no seu navegador e não é enviada a nenhuma IA.');
+        geracaoIA++;  // descarta uma resposta da IA que ainda esteja a caminho
+        abrirModoManual('Recorte manual: a foto não é enviada a nenhuma IA. Ela só chega ao servidor desta ferramenta quando você envia o formulário.');
       } else {
         loadingCard.style.display = 'none';
         successCard.style.display = 'none';
@@ -228,6 +230,7 @@
     // Envia a foto para o recorte com IA. Só é chamada com a opção "Com IA" marcada.
     async function executarProcessamentoIA(fileObj) {
       if (escolhaAtual() !== 'ia') return;
+      const geracao = ++geracaoIA;
       loadingCard.style.display = 'block';
       successCard.style.display = 'none';
       manualCard.style.display = 'none';
@@ -239,6 +242,8 @@
           body: fileObj
         });
         const data = await resp.json();
+        // O aluno trocou para "Manual" (ou reenviou) enquanto a IA respondia: não sobrescreve nada.
+        if (geracao !== geracaoIA || escolhaAtual() !== 'ia') return;
         if (!resp.ok || data.erro || !data.imagem_base64) {
           throw new Error(data.erro || 'Não foi possível isolar a assinatura automaticamente.');
         }
@@ -267,6 +272,7 @@
         prepararCanvasComImagem(originalImg);
 
       } catch (err) {
+        if (geracao !== geracaoIA) return;
         // Se a IA não conseguir ou houver erro, abre o modo manual suavemente
         loadingCard.style.display = 'none';
         successCard.style.display = 'none';
