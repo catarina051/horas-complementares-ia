@@ -119,69 +119,6 @@
 
 <script>
 (function() {
-  function preencherDadosMokados() {
-    const dados = {
-      'Nome completo': 'Catarina Gonçalves',
-      'Matrícula': '2023100123',
-      'RG': 'MG-12.345.678',
-      'CPF': '123.456.789-00'
-    };
-
-    document.querySelectorAll('.form-group').forEach(function(group) {
-      const label = group.querySelector('.form-label');
-      const input = group.querySelector('.form-input[type="text"]');
-      if (label && input && !input.value) {
-        const txt = label.textContent.replace(/\s*\*/g, '').trim();
-        if (dados[txt]) {
-          input.value = dados[txt];
-          input.dispatchEvent(new Event('input', { bubbles: true }));
-          input.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-      }
-    });
-
-    const cursoBox = document.querySelector('#option0_field-0, input.multiselect-checkbox[id*="field-0"][value*="Computação"]');
-    if (cursoBox && !document.querySelector('#field-0 input:checked')) {
-      cursoBox.checked = true;
-      cursoBox.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    const ingressoBox = document.querySelector('input.multiselect-checkbox[id*="field-1"][value*="MIGREI"], input.multiselect-checkbox[id*="field-1"][value*="2023.1"], #option0_field-1');
-    if (ingressoBox && !document.querySelector('#field-1 input:checked')) {
-      ingressoBox.checked = true;
-      ingressoBox.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    const modoBox = document.querySelector('#option0_field-4, input.multiselect-checkbox[id*="field-4"][value^="Primeira"]');
-    if (modoBox && !document.querySelector('#field-4 input:checked')) {
-      modoBox.checked = true;
-      modoBox.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    const privBox = document.querySelector('#option0_field-14, input.multiselect-checkbox[id*="field-14"], input.multiselect-checkbox[value^="Entendo"]');
-    if (privBox && !privBox.checked) {
-      privBox.checked = true;
-      privBox.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    document.querySelectorAll('.error-visible').forEach(function(el) {
-      el.classList.remove('error-visible');
-      el.classList.add('error-hidden');
-    });
-
-    if (!document.getElementById('aviso-mock-teste')) {
-      const banner = document.createElement('div');
-      banner.id = 'aviso-mock-teste';
-      banner.style.cssText = 'margin: 0 0 16px; padding: 10px 14px; background: #e7f5ff; border: 1px solid #74c0fc; border-radius: 6px; font-size: 13px; color: #1864ab; display: flex; align-items: center; justify-content: space-between; text-align: left;';
-      banner.innerHTML = '<span>⚡ <b>Dados mockados para testes:</b> Nome, Matrícula, RG, CPF, Curso, Ingresso e Privacidade foram pré-preenchidos. Basta você anexar os arquivos!</span>';
-      
-      const formContainer = document.querySelector('#n8n-form') || document.querySelector('.container');
-      if (formContainer) {
-        formContainer.insertBefore(banner, formContainer.firstChild);
-      }
-    }
-  }
-
   function initSignatureEditor() {
     const sigInput = document.querySelector('input[type="file"][accept*=".png"], input[type="file"][accept*=".jpg"]');
     if (!sigInput) return;
@@ -520,7 +457,6 @@
 
   function start() {
     initSignatureEditor();
-    setTimeout(preencherDadosMokados, 150);
   }
 
   if (document.readyState !== 'loading') {
