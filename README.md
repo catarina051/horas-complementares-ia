@@ -9,8 +9,9 @@ CEFET-MG Leopoldina. O aluno envia um certificado e recebe:
 - **Uma estimativa das horas aproveitáveis**, com conta, teto da categoria e fonte da regra.
 - **Um único PDF**, com declaração de autenticidade preenchida, assinatura recortada, data e certificado.
 
-**Estado atual:** MVP funcional em piloto, executado localmente com Docker e validado em 31/10/2026,
-com **61 testes automatizados passando** e verificação do fluxo completo.
+**Estado atual:** em piloto numa VM da AWS, já usado por outros alunos do curso. Na medição da
+autora, o registro de um certificado caiu de **21 min 49 s para 2 min** (cronometrado). Testado com
+4 certificados reais e 3 fotos de assinatura diferentes, com **83 testes automatizados passando**.
 
 ## Veja o resultado
 
@@ -46,7 +47,9 @@ A validação final da atividade e das horas continua sendo da Coordenação.
 
 1. Seleciona o curso e a versão da **matriz atual**. Quem migrou de PPC seleciona a matriz de destino.
 2. Envia o certificado em PDF. Documentos com páginas em imagem passam por OCR local quando necessário.
-3. No primeiro uso, informa os dados e anexa a foto da assinatura, podendo cortar a imagem e remover o fundo branco diretamente na interface antes de ela ser anexada ao documento. A ferramenta monta a declaração e gera também uma declaração-base para guardar.
+3. No primeiro uso, informa os dados, escolhe como preparar a assinatura (**com IA** ou **manual, sem
+   IA**) e anexa a foto. O formulário explica o que acontece em cada opção, e nada é enviado antes da
+   escolha. A ferramenta monta a declaração e gera também uma declaração-base para guardar.
 4. Nos próximos certificados, envia a declaração-base. O sistema atualiza a data sem pedir os dados novamente.
 5. Confere a categoria, a regra e os avisos; pré-visualiza o PDF gerado completo diretamente na tela antes de baixar e faz o registro no SIGAA.
 
@@ -62,7 +65,7 @@ atividade e extrair quantidades. **O modelo não calcula horas nem inventa o có
 |---|---|---|
 | Interpretação do certificado | Gemini com contexto do curso, exemplos e saída JSON com schema | Lidar com redações diferentes e categorias próximas |
 | Extração de texto de páginas em imagem | Tesseract local | Ler certificados digitalizados antes da chamada ao LLM |
-| Preparo da assinatura | Recorte e remoção de fundo pelo aluno no navegador + limpeza direta local | Ajustar a assinatura antes do anexo sem depender de detecção automática |
+| Preparo da assinatura | Escolha do aluno: Gemini localiza a assinatura, ou recorte manual no navegador; a limpeza do fundo é sempre local | Dar ao aluno a decisão de enviar ou não a foto da assinatura a uma IA |
 | Aproveitamento de horas | Fórmulas, fatores e tetos em JSON + JavaScript | Permitir cálculo reproduzível e consulta à fonte |
 | Opção do SIGAA | Comparação pelo LLM com catálogo por matriz, categoria e variante | Escolher entre os tipos disponíveis respeitando o código daquele aluno |
 | Declaração, pré-visualização e PDF final | Templates por curso, Gotenberg e pré-visualizador interativo | Permitir conferência visual completa do documento antes do download |
@@ -80,23 +83,27 @@ flowchart LR
     O --> A[Ocultação de identificadores]
     A --> L[Gemini: categoria, código e quantidades]
     L --> R[Regras e catálogo SIGAA]
-    S[Assinatura: recorte e fundo transparente] --> D[Declaração com data]
+    S[Assinatura: com IA ou manual] --> D[Declaração com data]
     B[Declaração-base no reuso] --> D
     D --> M[PDF final, pré-visualizador e resultado]
     R --> M
     C --> M
 ```
 
-O [workflow n8n](workflows/horas-complementares.json) orquestra 32 nós. O código dos Code nodes fica em
+O [workflow n8n](workflows/horas-complementares.json) orquestra 35 nós. O código dos Code nodes fica em
 [`n8n/codigo/`](n8n/codigo/), e o [gerador](n8n/montar-workflow.mjs) mantém o JSON exportado atualizado.
-O formulário e a API `/webhook/classificar` compartilham a classificação e o cálculo; a API é usada na avaliação.
+O formulário e a API `/webhook/classificar` compartilham a classificação e o cálculo; a API é usada na
+avaliação e não fica exposta em produção. A prévia do recorte com IA passa por `/webhook/assinatura-ia`,
+e o serviço Python só é acessível pelo n8n, na rede interna do Docker.
 
 ## O que já foi validado
 
 | Evidência | Escopo |
 |---|---|
-| **37 testes JavaScript passando** | Cálculos, matrizes, códigos/opções do SIGAA, prompt com tipos disponíveis, pré-visualizador de PDF e editor de assinatura |
-| **27 testes Python passando no container** | Datas, leitura de PDF, OCR, rotas HTTP e processamento direto da assinatura |
+| **45 testes JavaScript passando** | Cálculos, matrizes, códigos/opções do SIGAA, prompt, anonimização (nome fora de ordem, erros de OCR, links e códigos), workflow em dia com o código e versão do patch do n8n |
+| **38 testes Python passando** | Datas, leitura de PDF, OCR, limites de renderização, rotas HTTP e recorte da assinatura (incluindo foto sobre mesa de madeira) |
+| Fluxo da assinatura | Sem escolha nada é enviado; no modo manual o servidor recorta sem IA; com IA, uma única chamada |
+| Auditoria de segurança e privacidade | Achados corrigidos: log de conteúdo, restos de dados no n8n, limites de upload e anonimização |
 | Primeiro uso e reuso pelo formulário | PDF final com pré-visualizador em tela, assinatura tratada e declaração-base |
 | Conferência visual dos modelos dos dois cursos | Campos, data, posição da assinatura e certificado |
 | Exemplo fictício processado pela API real | Categoria na área, ECL2023 e 24 h/a para o curso de 20 horas |
@@ -106,9 +113,9 @@ separada e usa [`evals/run_eval.py`](evals/run_eval.py): compara categoria, hora
 suspeita, registrando também tokens e modo simulado. Os registros históricos de um único certificado
 não sustentam uma taxa de acerto para o produto atual.
 
-O piloto com outros alunos vai comparar o tempo manual e automatizado, medir categoria/horas em
-pelo menos 20 certificados homologados e contar uso e correções necessárias, com consentimento.
-**Ainda não há economia de tempo, volume de usuários ou taxa de acerto publicados como resultado do piloto.**
+O tempo de 21 min 49 s → 2 min é uma medição da autora com um certificado. O piloto com outros alunos
+vai medir categoria e horas em pelo menos 20 certificados homologados e contar uso e correções
+necessárias, com consentimento. **Ainda não há taxa de acerto nem volume de usuários publicados.**
 
 ## Decisões de produto e aprendizados
 
@@ -117,9 +124,15 @@ pelo menos 20 certificados homologados e contar uso e correções necessárias, 
 - **Regras conferíveis fora do LLM:** uma inferência de 570 h/a de Computação foi corrigida ao
   consultar o PPC, que separa AC de extensão. As matrizes ganharam testes. Fórmula, quantidade ou
   opção ausente agora pedem confirmação, sem preencher a lacuna com uma resposta inventada.
-- **Documentos reais mudaram a solução:** a leitura de PDFs passou a incluir OCR, e filtros CSS
-  deram lugar à detecção local da assinatura. Os casos encontrados viraram regressões para imagens,
-  proporção, pontos, acentos e transparência.
+- **Documentos reais mudaram a solução:** a leitura de PDFs passou a incluir OCR, e o recorte da
+  assinatura passou a procurar a tinta só dentro da folha, depois que os veios de uma mesa de madeira
+  foram confundidos com a assinatura. Os casos encontrados viraram regressões.
+- **A assinatura só vai para a IA se o aluno quiser:** a primeira versão enviava a foto ao Gemini assim
+  que era anexada. Agora o aluno escolhe entre IA e recorte manual, com o aviso de que o plano gratuito
+  do Google pode usar o conteúdo enviado.
+- **Auditoria antes de crescer:** uma revisão de segurança achou restos de CPF e RG no banco do n8n e um
+  log que gravava trechos de certificados. Arquivos de execução passaram a ficar só em memória, o banco
+  é compactado a cada subida e os logs não registram conteúdo.
 
 A construção foi assistida por IA na implementação, depuração, testes e documentação. As respostas
 foram confrontadas com o comportamento do programa, documentos de referência e casos reproduzíveis.
@@ -155,12 +168,14 @@ As [instruções de validação](docs/VALIDACAO.md) incluem os comandos dos test
 e um roteiro curto de demonstração. O [gabarito de exemplo](evals/gabarito.example.csv) é sintético.
 
 Há instruções para [compartilhar por túnel temporário](docs/VALIDACAO.md#compartilhar-para-um-piloto).
-Não há uma instância pública permanente; o acesso ao piloto depende do computador e do Docker ligados.
+O piloto roda numa VM da AWS com HTTPS; a configuração (sem segredos) e o script de atualização
+estão em [`deploy/`](deploy/README.md).
 
 ## Dados pessoais e limites
 
-- **Dados:** o histórico do n8n não é persistido e o serviço Python não registra o corpo das
-  requisições. Nome informado, matrícula, RG, CPF e e-mails são mascarados antes do Gemini; padrões
+- **Dados:** o histórico do n8n não é persistido, os arquivos de cada execução ficam num volume em
+  memória apagado a cada 30 minutos, o banco do n8n é compactado a cada subida e o serviço Python não
+  registra o conteúdo das requisições. Nome informado, matrícula, RG, CPF e e-mails são mascarados antes do Gemini; padrões
   e OCR não garantem anonimização completa. A declaração é montada no servidor da ferramenta.
 - **Assinatura:** o aluno escolhe. *Com IA*, a foto vai ao Gemini (plano gratuito, em que o Google
   pode usar o conteúdo para melhorar seus produtos) só para localizar a assinatura; o recorte e a
@@ -183,5 +198,6 @@ Não há uma instância pública permanente; o acesso ao piloto depende do compu
 | [`services/declaracao/`](services/declaracao/) | Extração de texto/OCR, datas e processamento da assinatura |
 | [`templates/`](templates/) | Modelos de declaração dos dois cursos |
 | [`tests/`](tests/) e [`evals/`](evals/) | Regressões de software e avaliação do classificador |
+| [`deploy/`](deploy/) e [`scripts/`](scripts/) | Configuração de produção e scripts de implantação |
 
 As referências acadêmicas e as decisões de cálculo estão em [`regras/README.md`](regras/README.md).
