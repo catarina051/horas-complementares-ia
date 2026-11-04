@@ -8,7 +8,7 @@ const certificado = item.binary?.certificado;
 
 const versao = String(corpo.versao ?? 'v2').trim();
 const cursoId = String(corpo.curso ?? 'eng-computacao').trim();
-const curso = cursos[cursoId];
+const curso = Object.hasOwn(cursos, cursoId) ? cursos[cursoId] : undefined;
 const matriz = String(corpo.matriz ?? curso?.matriz_padrao ?? '').trim();
 let erro = '';
 if (!curso) erro = `Curso inválido. Use um destes: ${Object.keys(cursos).join(', ')}.`;

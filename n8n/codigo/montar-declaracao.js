@@ -4,8 +4,9 @@ const fs = require('fs');
 const item = $input.first();
 const curso = JSON.parse(fs.readFileSync('/data/regras/cursos.json', 'utf8'))[item.json.curso];
 
-const escapar = (s) => String(s).replace(/[&<>"']/g, (c) => (
-  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+// Chaves também: um nome com "{{assinatura}}" seria trocado pelos marcadores do modelo abaixo.
+const escapar = (s) => String(s).replace(/[&<>"'{}]/g, (c) => (
+  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '{': '&#123;', '}': '&#125;' }[c]
 ));
 const MIME = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' };
 
