@@ -182,3 +182,39 @@ def test_http_texto(servidor):
     assert 'Fulana de Tal Exemplo' in corpo['texto']
     status, corpo = _post(servidor + '/texto', b'nao e pdf')
     assert status == 422
+
+
+def test_renderizar_paginas():
+    r = app.renderizar_paginas(kit_pdf())
+    assert r['total'] == 1
+    assert len(r['paginas']) == 1
+    p = r['paginas'][0]
+    assert p['numero'] == 1
+    assert p['largura'] > 0 and p['altura'] > 0
+    assert p['imagem_b64'].startswith('data:image/jpeg;base64,')
+
+
+def test_http_renderizar(servidor):
+    status, corpo = _post(servidor + '/renderizar', kit_pdf())
+    assert status == 200
+    assert corpo['total'] == 1
+    assert len(corpo['paginas']) == 1
+    assert corpo['paginas'][0]['imagem_b64'].startswith('data:image/jpeg;base64,')
+    status, corpo = _post(servidor + '/renderizar', b'invalido')
+    assert status == 422
+
+
+def test_http_assinatura_ia_e_cors(servidor):
+    req_opt = urllib.request.Request(servidor + '/assinatura-ia', method='OPTIONS')
+    with urllib.request.urlopen(req_opt) as resp:
+        assert resp.status == 204
+        assert resp.headers.get('Access-Control-Allow-Origin') == '*'
+
+    from test_assinatura import foto
+    dados = foto(transparente=True)
+    req = urllib.request.Request(servidor + '/assinatura-ia', data=dados, headers={'Content-Type': 'image/png'})
+    with urllib.request.urlopen(req) as resp:
+        assert resp.status == 200
+        corpo = json.load(resp)
+        assert corpo['metodo'] == 'transparencia_existente'
+        assert 'imagem_base64' in corpo

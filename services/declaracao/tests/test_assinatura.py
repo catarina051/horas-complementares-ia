@@ -117,11 +117,19 @@ def test_regioes_de_nome_e_sobrenome_alinhadas_formam_uma_assinatura():
     assert caixa == (150,200,800,300)
 
 
-def test_png_transparente_validado_nao_perde_trechos_fora_da_caixa_do_detector(monkeypatch):
-    import detector_assinatura as detector
-    monkeypatch.setattr(detector, 'localizar_assinatura', lambda img: (img,(300,550,575,755),.9))
+def test_png_transparente_validado_nao_perde_trechos_fora_da_caixa_do_detector():
     r = app.recortar_assinatura(foto(transparente=True))
     assert r['largura'] >= 350
+    assert r['metodo'] == 'processamento_direto'
+
+
+def test_recortar_assinatura_cortada_e_sem_fundo_pelo_usuario():
+    # Quando o usuário corta e remove o fundo na interface, o backend recebe o PNG
+    # e preserva a assinatura sem depender de modelo detector.
+    dados = foto(transparente=True)
+    r = app.recortar_assinatura(dados)
+    assert r['mime_type'] == 'image/png'
+    assert r['metodo'] == 'processamento_direto'
 
 
 def test_recorte_expande_da_regiao_detectada_para_os_tracos_proximos_no_papel():
@@ -149,3 +157,55 @@ def test_png_com_margem_transparente_remove_papel_da_fotografia(monkeypatch):
     saida = Image.open(BytesIO(base64.b64decode(r['imagem_base64'])))
     assert saida.width < 360 and saida.height < 160
     assert saida.getpixel((0,0))[3] == 0
+
+
+def test_recortar_assinatura_ia_com_transparencia_previa():
+    dados_transp = foto(transparente=True)
+    r = assinatura.recortar_assinatura_com_ia(dados_transp)
+    assert r['metodo'] == 'transparencia_existente'
+    assert r['confianca'] == 1.0
+    img = Image.open(BytesIO(base64.b64decode(r['imagem_base64'])))
+    assert img.mode == 'RGBA'
+    assert img.getpixel((0, 0))[3] == 0
+
+
+def test_recortar_assinatura_ia_sem_chave_faz_fallback(monkeypatch):
+    monkeypatch.delenv('GEMINI_API_KEY', raising=False)
+    dados = foto()
+    r = assinatura.recortar_assinatura_com_ia(dados, api_key=None)
+    assert 'aviso' in r or r['metodo'] == 'processamento_direto'
+
+
+def test_recortar_assinatura_ia_com_resposta_gemini(monkeypatch):
+    class MockResponse:
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+        def read(self):
+            import json
+            conteudo = {
+                'candidates': [{
+                    'content': {
+                        'parts': [{
+                            'text': json.dumps({
+                                'box_2d': [400, 250, 650, 800],
+                                'confianca': 'alta',
+                                'descricao': 'assinatura em caneta azul'
+                            })
+                        }]
+                    }
+                }]
+            }
+            return json.dumps(conteudo).encode('utf-8')
+
+    import urllib.request
+    monkeypatch.setattr(urllib.request, 'urlopen', lambda *args, **kwargs: MockResponse())
+
+    dados = foto()
+    r = assinatura.recortar_assinatura_com_ia(dados, api_key='fake-key')
+    assert r['metodo'] == 'ia_gemini'
+    assert r['box_2d'] == [400, 250, 650, 800]
+    img = Image.open(BytesIO(base64.b64decode(r['imagem_base64'])))
+    assert img.mode == 'RGBA'
+    assert img.getpixel((0, 0))[3] == 0

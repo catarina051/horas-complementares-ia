@@ -14,6 +14,7 @@ registrado em log.
 
 POST /redatar[?data=AAAA-MM-DD]  corpo: application/pdf  ->  JSON
 POST /texto                      corpo: application/pdf  ->  {texto, paginas, paginas_ocr}
+POST /renderizar                 corpo: application/pdf  ->  {paginas: [{numero, largura, altura, imagem_b64}], total}
 GET  /health
 """
 from __future__ import annotations
@@ -34,7 +35,11 @@ from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
 from atualizar_data_declaracao import interpretar_data, substituir_data
-from assinatura import recortar_assinatura as _recortar_assinatura, ErroAssinatura
+from assinatura import (
+    recortar_assinatura as _recortar_assinatura,
+    recortar_assinatura_com_ia as _recortar_assinatura_com_ia,
+    ErroAssinatura,
+)
 
 # Marca gravada pelo Gotenberg nos metadados da declaração-base (campo Subject).
 KIT_MARCA = 'horas-complementares-ia/declaracao-base/v2'
@@ -59,6 +64,13 @@ class ErroDeclaracao(Exception):
 def recortar_assinatura(dados: bytes) -> dict:
     try:
         return _recortar_assinatura(dados)
+    except ErroAssinatura as e:
+        raise ErroDeclaracao(str(e)) from None
+
+
+def recortar_assinatura_ia(dados: bytes) -> dict:
+    try:
+        return _recortar_assinatura_com_ia(dados)
     except ErroAssinatura as e:
         raise ErroDeclaracao(str(e)) from None
 
@@ -167,6 +179,7 @@ def extrair_texto(pdf: bytes, max_paginas: int = 10) -> dict:
     Página com imagem e quase nenhum texto selecionável (certificado colado como figura
     no modelo do curso, ou digitalizado) passa por OCR. O texto selecionável é mantido.
     """
+    print(f"DEBUG renderizar: len={len(pdf)}, prefix={pdf[:50]!r}", flush=True)
     try:
         doc = pymupdf.open(stream=pdf, filetype='pdf')
     except (pymupdf.FileDataError, RuntimeError):
@@ -185,14 +198,54 @@ def extrair_texto(pdf: bytes, max_paginas: int = 10) -> dict:
     return {'texto': '\n'.join(partes).strip(), 'paginas': doc.page_count, 'paginas_ocr': paginas_ocr}
 
 
+def renderizar_paginas(pdf: bytes, dpi: int = 110, max_paginas: int = 10) -> dict:
+    """Renderiza cada página do PDF como imagem JPEG para visualização universal no navegador."""
+    if pdf.startswith(b'{"type":"Buffer"') or pdf.startswith(b'{"type": "Buffer"'):
+        try:
+            pdf = bytes(json.loads(pdf.decode('utf-8'))['data'])
+        except Exception:
+            pass
+
+    try:
+        doc = pymupdf.open(stream=pdf, filetype='pdf')
+        if not doc.page_count:
+            raise ErroDeclaracao('O arquivo enviado não contém páginas.')
+    except Exception:
+        raise ErroDeclaracao('O arquivo não é um PDF válido para visualização.') from None
+
+    paginas = []
+    for i, pagina in enumerate(doc):
+        if i >= max_paginas:
+            break
+        pix = pagina.get_pixmap(dpi=dpi)
+        img_b64 = base64.b64encode(pix.tobytes('jpeg', jpg_quality=85)).decode('ascii')
+        paginas.append({
+            'numero': i + 1,
+            'largura': pix.width,
+            'altura': pix.height,
+            'imagem_b64': f'data:image/jpeg;base64,{img_b64}',
+        })
+    return {'paginas': paginas, 'total': doc.page_count}
+
+
 class Handler(BaseHTTPRequestHandler):
     def _json(self, status: int, corpo: dict) -> None:
         dados = json.dumps(corpo, ensure_ascii=False).encode('utf-8')
         self.send_response(status)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
         self.send_header('Content-Length', str(len(dados)))
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, x-goog-api-key')
         self.end_headers()
         self.wfile.write(dados)
+
+    def do_OPTIONS(self) -> None:
+        self.send_response(204)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, x-goog-api-key')
+        self.end_headers()
 
     def do_GET(self) -> None:
         if urlparse(self.path).path == '/health':
@@ -202,7 +255,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         url = urlparse(self.path)
-        if url.path not in ('/redatar', '/texto', '/assinatura'):
+        if url.path not in ('/redatar', '/texto', '/assinatura', '/assinatura-ia', '/renderizar'):
             self._json(404, {'erro': 'rota inexistente'})
             return
         tamanho = int(self.headers.get('Content-Length') or 0)
@@ -211,10 +264,21 @@ class Handler(BaseHTTPRequestHandler):
             return
         corpo = self.rfile.read(tamanho)
         try:
-            if url.path == '/assinatura':
-                self._json(200, recortar_assinatura(corpo))
+            if url.path in ('/assinatura', '/assinatura-ia'):
+                query = parse_qs(url.query)
+                usar_ia = (
+                    url.path == '/assinatura-ia'
+                    or query.get('modo', [''])[0] == 'ia'
+                    or query.get('ia', [''])[0] in ('1', 'true')
+                )
+                if usar_ia:
+                    self._json(200, recortar_assinatura_ia(corpo))
+                else:
+                    self._json(200, recortar_assinatura(corpo))
             elif url.path == '/texto':
                 self._json(200, extrair_texto(corpo))
+            elif url.path == '/renderizar':
+                self._json(200, renderizar_paginas(corpo))
             else:
                 self._json(200, processar(corpo, parse_qs(url.query).get('data', [None])[0]))
         except ErroDeclaracao as e:
