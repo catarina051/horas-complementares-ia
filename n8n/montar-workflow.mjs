@@ -6,9 +6,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
-const codigo = (nome) => readFileSync(join(AQUI, 'codigo', `${nome}.js`), 'utf8');
+// LF sempre: o JSON exportado não pode depender do sistema em que foi gerado.
+const lf = (texto) => texto.replace(/\r\n/g, '\n');
+const codigo = (nome) => lf(readFileSync(join(AQUI, 'codigo', `${nome}.js`), 'utf8'));
 const cursos = JSON.parse(readFileSync(join(AQUI, '..', 'regras', 'cursos.json'), 'utf8'));
-const editorAssinaturaHtml = readFileSync(join(AQUI, '..', 'templates', 'editor-assinatura.html'), 'utf8');
+const editorAssinaturaHtml = lf(readFileSync(join(AQUI, '..', 'templates', 'editor-assinatura.html'), 'utf8'));
 
 const nodes = [];
 const connections = {};

@@ -13,7 +13,7 @@ const fsData = {
 };
 
 export function codigo(nome) {
-  return fs.readFileSync(join(RAIZ, 'n8n', 'codigo', `${nome}.js`), 'utf8');
+  return fs.readFileSync(join(RAIZ, 'n8n', 'codigo', `${nome}.js`), 'utf8').replace(/\r\n/g, '\n');
 }
 
 export async function executar(nome, { entrada = { json: {} }, nos = {}, env = {} } = {}) {
