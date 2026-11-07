@@ -1,5 +1,7 @@
 # Horas Complementares com IA
 
+[![testes](https://github.com/catarina051/horas-complementares-ia/actions/workflows/testes.yml/badge.svg)](https://github.com/catarina051/horas-complementares-ia/actions/workflows/testes.yml)
+
 **Do certificado ao PDF para o portal acadêmico SIGAA, com classificação por IA e cálculo de horas rastreável.**
 
 [Assista ao vídeo do projeto](https://lnkd.in/p/dp4rEizz)

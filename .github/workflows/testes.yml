@@ -1,0 +1,31 @@
+name: testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  javascript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Testes de regras, SIGAA, anonimização e workflow
+        run: node --test tests/*.test.mjs
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tesseract com português (para o teste de OCR)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq tesseract-ocr tesseract-ocr-por
+      - name: Dependências
+        run: python -m pip install -r services/declaracao/requirements.txt pytest
+      - name: Testes do serviço de declaração
+        run: python -m pytest services/declaracao -q -p no:cacheprovider
