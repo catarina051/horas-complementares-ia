@@ -2,6 +2,8 @@
 
 **Do certificado ao PDF para o portal acadêmico SIGAA, com classificação por IA e cálculo de horas rastreável.**
 
+[Assista ao vídeo do projeto](https://lnkd.in/p/dp4rEizz)
+
 Automação para estudantes de Engenharia de Computação e de Engenharia de Controle e Automação do
 CEFET-MG Leopoldina. O aluno envia um certificado e recebe:
 
@@ -10,8 +12,11 @@ CEFET-MG Leopoldina. O aluno envia um certificado e recebe:
 - **Um único PDF**, com declaração de autenticidade preenchida, assinatura recortada, data e certificado.
 
 **Estado atual:** em piloto numa VM da AWS, já usado por outros alunos do curso. Na medição da
-autora, o registro de um certificado caiu de **21 min 49 s para 2 min** (cronometrado). Testado com
-4 certificados reais e 3 fotos de assinatura diferentes, com **83 testes automatizados passando**.
+autora, o registro de um certificado caiu de **21 min 49 s** (manual, um certificado cronometrado) para
+**menos de 2 min** em cada um dos 5 certificados testados. A categoria saiu correta em **5 de 5**, conferida
+pela autora (amostra pequena, testes da autora). Testado com 5 certificados reais e 3 fotos de assinatura
+diferentes, com **83 testes automatizados passando**. A [projeção de economia](#resultado-nos-certificados-reais-e-projeção-de-economia)
+está abaixo, com a conta visível e marcada como estimativa.
 
 ## Veja o resultado
 
@@ -110,12 +115,39 @@ e o serviço Python só é acessível pelo n8n, na rede interna do Docker.
 
 Os testes de software **não medem a acurácia do LLM**. A avaliação de certificados homologados é
 separada e usa [`evals/run_eval.py`](evals/run_eval.py): compara categoria, horas e alerta de instrução
-suspeita, registrando também tokens e modo simulado. Os registros históricos de um único certificado
-não sustentam uma taxa de acerto para o produto atual.
+suspeita, registrando também tokens e modo simulado. Os 5 certificados conferidos pela autora (abaixo)
+mostram que o caso de uso funciona, mas não sustentam uma taxa de acerto para o produto.
 
-O tempo de 21 min 49 s → 2 min é uma medição da autora com um certificado. O piloto com outros alunos
-vai medir categoria e horas em pelo menos 20 certificados homologados e contar uso e correções
-necessárias, com consentimento. **Ainda não há taxa de acerto nem volume de usuários publicados.**
+## Resultado nos certificados reais e projeção de economia
+
+**Amostra pequena, testes da autora.** São 5 certificados reais, conferidos pela própria autora, e não
+certificados homologados pela Coordenação. Por isso o resultado abaixo mostra que a ferramenta funciona
+no caso de uso, não uma taxa de acerto do produto.
+
+| Medida | Valor | Fonte |
+|---|---|---|
+| Certificados reais testados | 5 | autora |
+| Categoria correta | **5 de 5** | conferida pela autora |
+| Tempo manual de referência | 21 min 49 s (um certificado) | cronometrado pela autora |
+| Tempo na ferramenta | menos de 2 min em cada um | autora; não cronometrado um a um, então a conta usa 2 min como teto |
+| Economia por certificado | **pelo menos 19 min 49 s** | 21 min 49 s − 2 min |
+| Pedidos de atividade complementar | cerca de 300 por semestre | estimativa da autora |
+| Alunos ativos no curso | cerca de 560 | estimativa da autora |
+
+**Projeção (estimativa, não é medição):**
+
+```
+economia por pedido  = 21 min 49 s − 2 min             = 19 min 49 s (1.189 s), no mínimo
+por semestre         = 1.189 s × 300 pedidos           ≈ 99 h
+por ano (2 semestres)= 99,1 h × 2                      ≈ 198 h
+```
+
+Esse número é um **teto teórico**: supõe que todos os pedidos do curso passariam pela ferramenta e que o
+tempo manual dos outros certificados seria igual ao do certificado cronometrado. O uso real é de poucas
+vezes por ano por aluno: 300 pedidos por semestre para cerca de 560 alunos ativos dá cerca de 0,5 pedido
+por aluno por semestre. **A adesão real e o número de alunos que de fato usam a ferramenta ainda não foram
+medidos.** O piloto vai medir categoria e horas em pelo menos 20 certificados homologados e contar uso e
+correções necessárias, com consentimento.
 
 ## Decisões de produto e aprendizados
 
