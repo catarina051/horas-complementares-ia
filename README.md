@@ -233,3 +233,5 @@ estão em [`deploy/`](deploy/README.md).
 | [`deploy/`](deploy/) e [`scripts/`](scripts/) | Configuração de produção e scripts de implantação |
 
 As referências acadêmicas e as decisões de cálculo estão em [`regras/README.md`](regras/README.md).
+
+<sub>Histórico do código: 26 commits, de 31/10/2026 a 04/11/2026 (5 dias corridos). Construído com assistência de IA.</sub>
